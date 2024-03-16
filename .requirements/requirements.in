@@ -1,0 +1,30 @@
+# NLP
+transformers
+sentence-transformers
+langchain
+torchtext
+
+# DL/ML
+torch==2.2.1+cu118
+scikit-learn
+
+# Optimization
+peft
+
+# Training
+vllm
+
+# Scoring
+torchmetrics
+
+# Data Manipulation
+pandas
+spacy
+
+# Visualization
+matplotlib
+seaborn
+
+# Notebooks
+jupyter
+ipykernel
