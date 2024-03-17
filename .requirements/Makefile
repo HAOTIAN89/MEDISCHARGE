@@ -35,14 +35,14 @@ pyenv:
 # Synchronise python environment with $(REQ_TXT)
 # Anything in $(REQ_TXT) will be installed in the python environment.
 # Anything not in $(REQ_TXT) will be removed from the python environment.
-sync_pyenv: $(VENV)
+sync_pyenv: $(VENV) $(REQ_TXT)
 	$(VENV)/bin/pip install --upgrade pip && \
 	$(VENV)/bin/pip install -r $(REQ_TXT)
 
 # Create the $(REQ_TXT) and the python environment then synchronise the python environment with $(REQ_TXT).
 # This is a convenience target that combines the all the steps to create a python environment
 # from scratch based on the dependencies in $(REQ_IN) file.
-synched_pyenv_noreq: $(VENV)
+synched_pyenv_noreq:
 	make $(REQ_TXT) && \
 	make pyenv && \
 	make sync_pyenv
@@ -50,6 +50,6 @@ synched_pyenv_noreq: $(VENV)
 # Create a python environment and synchronise it with $(REQ_TXT)
 # This is a convenience target that combines the all the steps to create a python environment
 # except that it assumes that the requirements file has already been created and is up-to-date.
-synched_pyenv: $(VENV)
+synched_pyenv:
 	make pyenv && \
 	make sync_pyenv
