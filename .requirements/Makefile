@@ -43,7 +43,7 @@ sync_pyenv: $(VENV) $(REQ_TXT)
 # This is a convenience target that combines the all the steps to create a python environment
 # from scratch based on the dependencies in $(REQ_IN) file.
 synched_pyenv_noreq:
-	make $(REQ_TXT) && \
+	make requirements.txt && \
 	make pyenv && \
 	make sync_pyenv
 
