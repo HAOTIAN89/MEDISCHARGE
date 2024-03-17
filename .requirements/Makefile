@@ -11,7 +11,8 @@ REQ_TXT:=requirements.txt
 REQ_IN_CPU:=requirements_cpu.in
 REQ_TXT_CPU:=requirements_cpu.txt
 
-TORCH_LINKS:="https://download.pytorch.org/whl/torch_stable.html"
+TORCH_GPU_WHL_LINK:="https://download.pytorch.org/whl/cu118"
+TORCH_CPU_WHL_LINK:="https://download.pytorch.org/whl/cpu"
 
 #########################
 # FILES
@@ -23,11 +24,11 @@ TORCH_LINKS:="https://download.pytorch.org/whl/torch_stable.html"
 # Run this if $(REQ_IN) has been updated.
 requirements.txt: $(REQ_IN)
 	rm -f $(REQ_TXT) && \
-	pip-compile --output-file=$(REQ_TXT) --find-links=$(TORCH_LINKS) $(REQ_IN)
+	pip-compile --output-file=$(REQ_TXT) --find-links=$(TORCH_GPU_WHL_LINK) $(REQ_IN)
 
 requirements_cpu.txt: $(REQ_IN_CPU)
 	rm -f $(REQ_TXT_CPU) && \
-	pip-compile --output-file=$(REQ_TXT_CPU) $(REQ_IN_CPU)
+	pip-compile --output-file=$(REQ_TXT_CPU) --find-links=$(TORCH_CPU_WHL_LINK) $(REQ_IN_CPU)
 
 
 #########################
