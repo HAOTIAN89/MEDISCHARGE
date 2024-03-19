@@ -22,14 +22,17 @@ from torch.utils.data import DataLoader, Dataset
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 
-from utils.data import *
-from utils.chat import *
+from src.utils.loading_saving import load_file, save_file
 
 # ----------------------- Constants ----------------------- #
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
 BATCH_SIZE = 4
+
+INPUT_KEY = ...
+OUTPUT_KEY = ...
+IDX_COL = ...
 
 # ----------------------- Inference parameters ----------------------- #
 
@@ -51,7 +54,7 @@ PARAMETERS = {
 
 # ----------------------- Inference utilities ----------------------- #
 
-def todo_list(data_df, gen_df, input_key, output_key, num_samples=None):
+def todo_list(data_df, gen_df, num_samples=None):
     '''
     Returns the list of samples to generate.
 
@@ -62,30 +65,30 @@ def todo_list(data_df, gen_df, input_key, output_key, num_samples=None):
     :param num_samples: int, keep only the first num_samples samples (default: None --> all)
     :return: list, the list of indices to generate
     '''
-    if input_key not in data_df.columns:
-        raise ValueError(f'Input key {input_key} not found in input file.')
-    valid_data = data_df[data_df[input_key].notnull()]
-    idx_todo = valid_data['idx'].tolist()
+    if INPUT_KEY not in data_df.columns:
+        raise ValueError(f'Input key {INPUT_KEY} not found in input file.')
+    valid_data = data_df[data_df[INPUT_KEY].notnull()]
+    idx_todo = valid_data[IDX_COL].tolist()
     if num_samples and len(idx_todo) > num_samples:
         idx_todo = idx_todo[:num_samples]
-    idx_done = gen_df[gen_df[output_key].notnull()]['idx'].tolist()
+    idx_done = gen_df[gen_df[OUTPUT_KEY].notnull()][IDX_COL].tolist()
     idx_todo = [i for i in idx_todo if i not in idx_done]
     if len(idx_todo) == 0:
         raise ValueError(f'All samples already generated.')
     return idx_todo
     
-def load_data(input_path, output_path, mode, num_samples=None):
+def load_data(input_path, output_path, num_samples=None):
     '''
     Loads the input data file and initializes the output data file. 
     '''
     data_df = load_file(input_path)
     print(f"\nLoaded data file...\n\tSamples: {data_df.shape[0]}\n\tColumns: {list(data_df.columns)}")
-    if 'idx' not in data_df.columns:
-        data_df['idx'] = data_df.index
+    if IDX_COL not in data_df.columns:
+        data_df[IDX_COL] = data_df.index
     data_df = data_df.reset_index(drop=True)
-    input_key, output_key = KEYS[mode]['input'], KEYS[mode]['output']
-    if input_key not in data_df.columns:
-        raise ValueError(f'Input key {input_key} not found in output file.')
+
+    if INPUT_KEY not in data_df.columns:
+        raise ValueError(f'Input key {INPUT_KEY} not found in output file.')
     
     if os.path.exists(output_path):
         gen_df = load_file(output_path)
@@ -93,11 +96,11 @@ def load_data(input_path, output_path, mode, num_samples=None):
     else:
         print(f"Creating output file...\n\tPath: {output_path}\n\tColumns: {list(data_df.columns)}")
         gen_df = pd.DataFrame(columns = data_df.columns)
-        gen_df[output_key] = TODO_VAL
+        gen_df[OUTPUT_KEY] = TODO_VAL
 
-    idx_todo = todo_list(data_df, gen_df, input_key, output_key, num_samples)
+    idx_todo = todo_list(data_df, gen_df, num_samples)
     print(f"\tSample left to generate: {len(idx_todo)}")
-    data_df = data_df[data_df['idx'].isin(idx_todo)]
+    data_df = data_df[data_df[IDX_COL].isin(idx_todo)]
     return data_df, gen_df
 
 def format_prompt(model_name, input, instructions):
@@ -108,13 +111,15 @@ def format_prompt(model_name, input, instructions):
     if 'mistral' in model_name.lower():
         prompt = f"[INST]\n{input}[/INST]\n"
     elif 'llama' in model_name.lower():
-        prompt = f"<s>[INST] <<SYS>>\n{instructions[0]}\n<</SYS>>\n\n{input}\n\n{instructions[1]} [/INST]"
-    else: 
+        prompt = f"<s>[INST] <<SYS>>\n{input} [/INST]"
+    elif 'meditron' in model_name.lower() :
         prompt = f"{BOS_TOKEN}question\n{input}{EOS_TOKEN}\n{BOS_TOKEN}answer\n"
+    else:
+        raise ValueError(f'{model_name} is not a supported model name')
 
     return prompt
 
-def infer_vllm(client, mode, prompt):
+def infer_vllm(client, model_name, prompt):
     """
     Inference using the VLLM backend (offline mode). 
     Returns the output text.
@@ -125,12 +130,13 @@ def infer_vllm(client, mode, prompt):
     :param mode: str, the mode to use for inference
     :param prompt: str, the prompt to generate from
     """
-    sampling_params = vllm.SamplingParams(**PARAMETERS[mode])
+    sampling_params = vllm.SamplingParams(**PARAMETERS[model_name])
     response = client.generate(prompt, sampling_params=sampling_params)
     if len(response) > 0:
         return [r.outputs[0].text for r in response]
     else:
         return response[0].outputs[0].text
+
 
 def load_few_shot(train_path, shots=1):
     '''
@@ -143,7 +149,7 @@ def load_few_shot(train_path, shots=1):
         print(f'Loading {shots}-shot exemplar from {train_path}...')
         train_df = load_file(train_path)
         sample = train_df.sample(shots)
-        few_shot_prompt = f"Here are {shots} example(s) of patient-doctor conversations and their corresponding clinical notes.\n\n"
+        few_shot_prompt = f"Here are {shots} example(s)\n\n"
         for i in range(shots):
             dialogue = sample.iloc[i]['conversation']
             note = sample.iloc[i]['data']
@@ -151,6 +157,8 @@ def load_few_shot(train_path, shots=1):
     else: 
         few_shot_prompt = 'Your answer should consist in one or a few paragrpahs of text, not overstructured.'
     return few_shot_prompt + '\n\n'
+
+   
 
 class Timer(): 
     def __init__(self): 
@@ -168,28 +176,8 @@ class Timer():
         time.sleep(breaktime)
 
 
-# ----------------------- Summary inference ----------------------- #
-
-def complete_json(text): 
-    ''' 
-    Format a (potentially partial) JSON string. 
-    Removes the last character until the string is valid.
-    '''
-    json_string = text.replace('\n', '')
-    while True:
-        if not json_string:
-            return None
-        try:
-            data = json.loads(json_string + '}')
-        except json.decoder.JSONDecodeError:
-            json_string = json_string[:-1]
-            continue
-        break
-    return data
-
 # ----------------------- Inference ----------------------- #
 
-    
 def infer(model_name,
           model_path, 
           input_path=None,
@@ -210,12 +198,9 @@ def infer(model_name,
         - num_samples: Number of samples to generate (default: None --> all)
     '''
 
-    print(f"\n\n# ----- INFERENCE: mode = {mode}, model = {model_name} ----- #\n\n")
-    instructions = INSTRUCTIONS[mode.replace('-gpt', '').replace('-gold', '')]
-    input_key, output_key = KEYS[mode]['input'], KEYS[mode]['output']
-    data_df, gen_df = load_data(input_path, output_path, mode, num_samples=num_samples)
-    template = None if mode != 'summarizer' else load_template(template_path)
-    batch_size = BATCH_SIZE if mode != 'summarizer' else 1
+    print(f"\n\n# ----- INFERENCE: model = {model_name}, parameters = {PARAMETERS[model_name]} ----- #\n\n")
+    data_df, gen_df = load_data(input_path, output_path, num_samples=num_samples)
+    batch_size = BATCH_SIZE
     inference_data = json.loads(data_df.to_json(orient='records'))
     data_loader = DataLoader(inference_data, batch_size=batch_size, shuffle=False)
     print(f"Created data loader\n\tBatches to generate: {len(data_loader)}\n\tBatch size: {batch_size}")
@@ -229,10 +214,9 @@ def infer(model_name,
         "tensor_parallel_size": torch.cuda.device_count(),
     }
     client = vllm.LLM(**kwargs)
-
     for batch in tqdm(data_loader, total=len(data_loader), position=0, leave=True):
-        prompts = [format_prompt(model_name, input, mode, instructions) for input in batch[input_key]]
-        answers = infer_vllm(client, mode, prompts)
+        prompts = [format_prompt(model_name, input) for input in batch[INPUT_KEY]]
+        answers = infer_vllm(client, model_name, prompts)
 
         if verbose:
             for prompt, answer in zip(prompts, answers):
@@ -240,7 +224,7 @@ def infer(model_name,
                 print(f'\n\n### ANSWER:\n\n{answer}')
 
         new_batch = pd.DataFrame(batch)
-        new_batch[output_key] = answers
+        new_batch[OUTPUT_KEY] = answers
         gen_df = pd.concat([gen_df, new_batch], ignore_index = True)
         save_file(gen_df, output_path, mode='w')
             
@@ -269,15 +253,10 @@ if __name__ == "__main__":
                         type=int,
                         default=None,
                         help='Number of samples to generate')
-    parser.add_argument('--template_path',
-                        type=str, 
-                        default='data/template.json',
-                        help='For summarizer mode only: path to the patient summary template.')
     parser.add_argument('--train_path',
                         type=str,
                         default=None,
-                        help='Path to the training data file. \
-                            Used to sample few-shot examples for direct-gpt inference.')
+                        help='Path to the training data file. For few shots prompting')
     parser.add_argument('--shots',
                         type=int,
                         default=0,
@@ -290,23 +269,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
         
-    if args.dialogue: 
-        print(f"Initializing vLLM client...")
-        kwargs = {
-            "model": args.model_path,
-            "tokenizer": args.model_path,
-            "trust_remote_code": True,
-            "max_num_seqs": 2048,
-            "tensor_parallel_size": torch.cuda.device_count(),
-        }
-        client = vllm.LLM(**kwargs)
-        prompt = format_prompt('medinote', args.dialogue, 'direct', INSTRUCTIONS['direct'])
-        answer = infer_vllm(client, 'direct', prompt)
-        print(f'\n\n{answer}')
-
-    
-    else:
-        infer(
+    infer(
             model_name=args.model_name,
             model_path=args.model_path,
             mode=args.mode,
