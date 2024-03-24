@@ -6,6 +6,8 @@
 #
 --find-links https://download.pytorch.org/whl/cu121
 
+absl-py==2.1.0
+    # via tensorboard
 accelerate==0.28.0
     # via peft
 aiohttp==3.9.3
@@ -163,6 +165,8 @@ fsspec[http]==2024.2.0
     #   torch
 greenlet==3.0.3
     # via sqlalchemy
+grpcio==1.62.1
+    # via tensorboard
 h11==0.14.0
     # via
     #   httpcore
@@ -313,10 +317,13 @@ lightning-utilities==0.11.0
     # via torchmetrics
 locket==1.0.0
     # via partd
+markdown==3.6
+    # via tensorboard
 markupsafe==2.1.5
     # via
     #   jinja2
     #   nbconvert
+    #   werkzeug
 marshmallow==3.21.1
     # via dataclasses-json
 matplotlib==3.8.3
@@ -394,6 +401,7 @@ numpy==1.26.4
     #   seaborn
     #   sentence-transformers
     #   spacy
+    #   tensorboard
     #   thinc
     #   torchmetrics
     #   torchtext
@@ -505,6 +513,7 @@ prompt-toolkit==3.0.43
 protobuf==5.26.0
     # via
     #   ray
+    #   tensorboard
     #   transformers
 psutil==5.9.8
     # via
@@ -657,6 +666,7 @@ six==1.16.0
     #   bleach
     #   python-dateutil
     #   rfc3339-validator
+    #   tensorboard
 smart-open==6.4.0
     # via
     #   spacy
@@ -673,7 +683,7 @@ spacy-legacy==3.0.12
     # via spacy
 spacy-loggers==1.0.5
     # via spacy
-sqlalchemy==2.0.28
+sqlalchemy==2.0.29
     # via
     #   langchain
     #   langchain-community
@@ -698,6 +708,10 @@ tenacity==8.2.3
     #   langchain
     #   langchain-community
     #   langchain-core
+tensorboard==2.16.2
+    # via -r requirements.in
+tensorboard-data-server==0.7.2
+    # via tensorboard
 terminado==0.18.1
     # via
     #   jupyter-server
@@ -779,7 +793,7 @@ transformers[sentencepiece]==4.39.1
     #   vllm
 triton==2.2.0
     # via torch
-typer==0.9.0
+typer==0.9.4
     # via
     #   spacy
     #   weasel
@@ -839,6 +853,8 @@ websocket-client==1.7.0
     # via jupyter-server
 websockets==12.0
     # via uvicorn
+werkzeug==3.0.1
+    # via tensorboard
 widgetsnbextension==4.0.10
     # via ipywidgets
 xformers==0.0.25

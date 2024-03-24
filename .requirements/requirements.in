@@ -15,6 +15,9 @@ nltk
 torchmetrics
 evaluate
 
+# Tracking
+tensorboard
+
 # Optimization
 peft
 optimum

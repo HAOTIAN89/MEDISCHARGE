@@ -45,3 +45,8 @@ sync_pyenv: $(VENV_PATH) $(REQ_TXT)
 synched_pyenv:
 	make pyenv
 	make sync_pyenv
+
+synched_pyenv_from_new_reqs:
+	make requirements.txt
+	make pyenv
+	make sync_pyenv
