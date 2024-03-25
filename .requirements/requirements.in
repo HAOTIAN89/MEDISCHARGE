@@ -1,25 +1,36 @@
+# DL/ML
+torch==2.2.1
+scikit-learn
+
 # NLP
 transformers
 sentence-transformers
+vllm
 langchain
 torchtext
-
-# DL/ML
-torch==2.2.1+cu118
-scikit-learn
-
-# Optimization
-peft
-
-# Training
-vllm
+spacy
+nltk
 
 # Scoring
 torchmetrics
+evaluate
+
+# Tracking
+tensorboard
+
+# Optimization
+peft
+optimum
+
+# Datasets
+datasets
 
 # Data Manipulation
 pandas
-spacy
+dask
+
+# Stats
+scipy
 
 # Visualization
 matplotlib
@@ -28,3 +39,6 @@ seaborn
 # Notebooks
 jupyter
 ipykernel
+
+# DevOps
+pre-commit
