@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 model = "meta-llama/Llama-2-13b-hf"
 tokenizer = AutoTokenizer.from_pretrained(model, token = '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')
 
+def get_token_list(text, tokenizer=tokenizer):
+    tokens = tokenizer.tokenize(text)
+    unique_tokens = list(set(tokens))
+    return unique_tokens
 
 def get_token_count(text, tokenizer = tokenizer):
     output = tokenizer(text, return_length = True)

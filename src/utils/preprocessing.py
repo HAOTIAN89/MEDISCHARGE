@@ -150,6 +150,21 @@ def remove_underscores(text):
     text = re.sub(r'(_{2,})', '_', text)
     return text
 
+def remove_enumerations(text):
+    """
+    When there are line returns followed by a number and a dot, we remove those.
+    """
+    text = re.sub(r'^(\d+[a-z]*\.\s*|\d+\.\s*)', '', text, flags=re.MULTILINE)
+    return text
+
+def treat_weird_tokens(text):
+    text = text.replace('(_)', '_')
+    text = text.replace('"_"', '_')
+    text = text.replace('@', 'at')
+    text = re.sub(r'-+', '-', text)
+    return text
+
+
 def treat_equals(text):
     """
     When there are more than 2,3,4,5 or equals simply remove them.
@@ -162,3 +177,12 @@ def treat_equals(text):
 
     return text
 
+def lowercase_first_letter(text):
+    pattern = r'\b([A-Za-z])([a-z]*)(?![A-Z]|\.)\b'
+    
+    processed_text = re.sub(pattern, lambda match: match.group(1).lower() + match.group(2) if len(match.group(0)) > 1 else match.group(0), text)
+    
+    return processed_text
+
+def remove_unecessary_tokens(text):
+    return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
