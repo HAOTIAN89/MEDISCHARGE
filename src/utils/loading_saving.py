@@ -3,7 +3,7 @@ Data loading and saving utilities.
 '''
 
 import os
-import pands as pd
+import pandas as pd
 
 def load_file(path): 
     '''

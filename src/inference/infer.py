@@ -9,20 +9,17 @@ import re
 import argparse
 import sys
 import os
-import time
 import numpy as np
 import pandas as pd
-try:
-    import vllm
-except ImportError:
-    print("")
+import vllm
 import json as json
 from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
-
-from src.utils.loading_saving import load_file, save_file
+current_file_path = os.path.abspath(__file__)
+parent_directory = os.path.dirname(os.path.dirname(current_file_path))
+sys.path.append(parent_directory)
+from utils.loading_saving import load_file, save_file
 
 # ----------------------- Constants ----------------------- #
 
@@ -124,7 +121,6 @@ def infer_vllm(client, model_name, prompt):
     Reference: https://github.com/vllm-project/vllm/blob/main/vllm/sampling_params.py
 
     :param client: vllm.LLM, the LLM offline generation engine to use for querying the VLLM backend
-    :param mode: str, the mode to use for inference
     :param prompt: str, the prompt to generate from
     """
     sampling_params = vllm.SamplingParams(**PARAMETERS[model_name])
@@ -163,6 +159,7 @@ def infer(model_name,
           INPUT_KEY,
           OUTPUT_KEY,
           IDX_COL,
+          instructions,
           input_path=None,
           output_path=None, 
           num_samples=None,
@@ -197,8 +194,9 @@ def infer(model_name,
         "tensor_parallel_size": torch.cuda.device_count(),
     }
     client = vllm.LLM(**kwargs)
+    print(f"vLLM client initialized")
     for batch in tqdm(data_loader, total=len(data_loader), position=0, leave=True):
-        prompts = [format_prompt(model_name, input) for input in batch[INPUT_KEY]]
+        prompts = [format_prompt(model_name, input, instruction=instructions) for input in batch[INPUT_KEY]]
         answers = infer_vllm(client, model_name, prompts)
 
         if verbose:
@@ -242,7 +240,7 @@ if __name__ == "__main__":
                         help='Column name for the index.')
     parser.add_argument('--prompt_path',
                         type=str,
-                        default=None,
+                        required=True,
                         help='Prompt to generate from.')
     parser.add_argument('--output_path', 
                         type=str,
@@ -250,7 +248,7 @@ if __name__ == "__main__":
                         help='Path to the output file with generated notes. ')
     parser.add_argument('--num_samples',
                         type=int,
-                        default=None,
+                        required=True,
                         help='Number of samples to generate')
     parser.add_argument('--verbose',
                         type=int,
@@ -259,17 +257,18 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
+    with open(args.prompt_path, 'r') as file:
+        instructions = json.load(file) 
+
     infer(
             model_name=args.model_name,
             model_path=args.model_path,
             INPUT_KEY = args.input_key,
             OUTPUT_KEY = args.output_key,
             IDX_COL = args.idx_col,
-            mode=args.mode,
-            intructions = args.instructions,
+            instructions = instructions,
             input_path=args.input_path,
             output_path=args.output_path,
             num_samples=args.num_samples,
-            template_path=args.template_path,
             verbose=args.verbose
         )
