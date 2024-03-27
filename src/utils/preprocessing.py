@@ -3,7 +3,7 @@ import regex as re
 import argparse
 from tqdm import tqdm
 tqdm.pandas()
-from token_count import get_token_count
+from src.utils.token_count import get_token_count
 
 
 # ----------------------- Preprocessing utilities ----------------------- #
