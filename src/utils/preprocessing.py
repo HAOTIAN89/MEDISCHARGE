@@ -1,5 +1,12 @@
 import pandas as pd
 import regex as re
+import argparse
+from tqdm import tqdm
+tqdm.pandas()
+from token_count import get_token_count
+
+
+# ----------------------- Preprocessing utilities ----------------------- #
 
 def load_data(file_path: str) -> pd.DataFrame:
     """Loads the data from the file_path."""
@@ -136,16 +143,15 @@ def extract_one_clean_input(text, features_to_include: list) -> str:
 def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list) -> pd.DataFrame:
     for feature in features_to_include:
         if feature not in feature_to_function:
-            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys)}.")    
-    extracted_features = combined_discharges['text'].apply(extract_one_clean_input, features_to_include=features_to_include)
+            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")    
+    extracted_features = combined_discharges['text'].progress_apply(extract_one_clean_input, features_to_include=features_to_include)
 
     return extracted_features
 
 
-
 def remove_underscores(text):
     """
-    When there are more than 2 underscores, we remove the extra underscores.
+    When there are more than 2 underscores, we remove the extra underscores and leave a single 1.
     """
     text = re.sub(r'(_{2,})', '_', text)
     return text
@@ -167,7 +173,7 @@ def treat_weird_tokens(text):
 
 def treat_equals(text):
     """
-    When there are more than 2,3,4,5 or equals simply remove them.
+    When there are more than 2,3,4,5 or equals we simply remove them.
     When there 6+ equls replace by \n
     """
     pattern = r'(?<![=])={2,5}(?![=])'
@@ -178,6 +184,9 @@ def treat_equals(text):
     return text
 
 def lowercase_first_letter(text):
+    """
+    ?????
+    """
     pattern = r'\b([A-Za-z])([a-z]*)(?![A-Z]|\.)\b'
     
     processed_text = re.sub(pattern, lambda match: match.group(1).lower() + match.group(2) if len(match.group(0)) > 1 else match.group(0), text)
@@ -186,3 +195,70 @@ def lowercase_first_letter(text):
 
 def remove_unecessary_tokens(text):
     return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Preprocess the data.')
+    parser.add_argument('--discharges_path', type=str, help='Path to the discharges file.')
+    parser.add_argument('--discharges_target_path', type=str, help='Path to the discharges target file.')
+    parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.')
+    parser.add_argument('--short_sequences', type= bool, default=False, help='Whether to keep only short sequences. (<2K tokens)') 
+    parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
+
+    args = parser.parse_args()
+
+    if args.mode not in ['BHC', 'DI']:
+        raise ValueError("Mode must be either 'BHC' or 'DI'.")
+
+    discharges_df = load_data(args.discharges_path)
+    discharges_target_df = load_data(args.discharges_target_path)
+
+    combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
+
+    in_out = pd.DataFrame()
+
+    if args.mode == 'BHC':
+        original_bhc_input = get_bhc_input(combined_discharges)
+        processed_bhc_input = extract_clean_inputs(combined_discharges, features_to_include = 
+            [
+                                'sex',
+                                'allergies',
+                                'chief_complaint',
+                                'major_surgical_procedures',
+                                'history_of_present_illness',
+                                'past_medical_history',
+                                'social_history',
+                                'family_history',
+                                'pertinent_results',
+                                'physical_exam',
+                            ])
+        
+        clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
+        in_out['input'] = original_bhc_input
+        in_out['output'] = combined_discharges['brief_hospital_course']
+    
+    elif args.mode == 'DI':
+        original_di_input = combined_discharges['text']
+        processed_di_input = "Brief Hospital Course:\n" + combined_discharges['brief_hospital_course'] + "\n" + extract_clean_inputs(combined_discharges, features_to_include =[
+            'medication_on_admission',
+            'discharge_medications',
+            'discharge_disposition',
+            'discharge_diagnosis',
+            'discharge_condition',
+        ] )
+
+
+        clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
+        in_out['input'] = original_di_input
+        in_out['output'] = combined_discharges['discharge_instructions']
+    
+    
+    if args.short_sequences:
+        in_out['token_count'] = in_out['input'].progress_apply(get_token_count)
+        in_out = in_out[in_out['token_count'] < 1950]
+        in_out.drop(columns=['token_count'], inplace=True)
+    
+    in_out['idx'] = in_out.index
+
+    save_data(in_out, args.output_path)
+

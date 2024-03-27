@@ -30,10 +30,6 @@ BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
 BATCH_SIZE = 4
 
-INPUT_KEY = ...
-OUTPUT_KEY = ...
-IDX_COL = ...
-
 # ----------------------- Inference parameters ----------------------- #
 
 GREEDY_PARAMETERS = {
@@ -54,7 +50,7 @@ PARAMETERS = {
 
 # ----------------------- Inference utilities ----------------------- #
 
-def todo_list(data_df, gen_df, num_samples=None):
+def todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples=None):
     '''
     Returns the list of samples to generate.
 
@@ -77,7 +73,7 @@ def todo_list(data_df, gen_df, num_samples=None):
         raise ValueError(f'All samples already generated.')
     return idx_todo
     
-def load_data(input_path, output_path, num_samples=None):
+def load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_samples=None):
     '''
     Loads the input data file and initializes the output data file. 
     '''
@@ -98,22 +94,23 @@ def load_data(input_path, output_path, num_samples=None):
         gen_df = pd.DataFrame(columns = data_df.columns)
         gen_df[OUTPUT_KEY] = TODO_VAL
 
-    idx_todo = todo_list(data_df, gen_df, num_samples)
+    idx_todo = todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples)
     print(f"\tSample left to generate: {len(idx_todo)}")
     data_df = data_df[data_df[IDX_COL].isin(idx_todo)]
     return data_df, gen_df
 
-def format_prompt(model_name, input, instructions):
+def format_prompt(model_name, input, instruction):
     """
     Format prompt for inference with model-specific formatting.
     Models supported: meditron, llama, mistral. 
-    """     
+    """   
+    inner_prompt = instruction.format(input)  
     if 'mistral' in model_name.lower():
-        prompt = f"[INST]\n{input}[/INST]\n"
+        prompt = f"[INST]\n{inner_prompt}[/INST]\n"
     elif 'llama' in model_name.lower():
-        prompt = f"<s>[INST] <<SYS>>\n{input} [/INST]"
+        prompt = f"<s>[INST] <<SYS>>\n{inner_prompt} [/INST]"
     elif 'meditron' in model_name.lower() :
-        prompt = f"{BOS_TOKEN}question\n{input}{EOS_TOKEN}\n{BOS_TOKEN}answer\n"
+        prompt = f"{BOS_TOKEN}question\n{inner_prompt}{EOS_TOKEN}\n{BOS_TOKEN}answer\n"
     else:
         raise ValueError(f'{model_name} is not a supported model name')
 
@@ -158,28 +155,14 @@ def load_few_shot(train_path, shots=1):
         few_shot_prompt = 'Your answer should consist in one or a few paragrpahs of text, not overstructured.'
     return few_shot_prompt + '\n\n'
 
-   
-
-class Timer(): 
-    def __init__(self): 
-        self.start_time = None
-        self.end_time = None
-
-    def start(self):
-        self.start_time = time.time()
-
-    def stop(self):
-        self.end_time = time.time()
-        lapse = self.end_time - self.start_time
-        breaktime = max(int(60 - lapse) + 2, 5)
-        print(f"Break for {breaktime} seconds.")
-        time.sleep(breaktime)
-
 
 # ----------------------- Inference ----------------------- #
 
 def infer(model_name,
           model_path, 
+          INPUT_KEY,
+          OUTPUT_KEY,
+          IDX_COL,
           input_path=None,
           output_path=None, 
           num_samples=None,
@@ -199,7 +182,7 @@ def infer(model_name,
     '''
 
     print(f"\n\n# ----- INFERENCE: model = {model_name}, parameters = {PARAMETERS[model_name]} ----- #\n\n")
-    data_df, gen_df = load_data(input_path, output_path, num_samples=num_samples)
+    data_df, gen_df = load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_samples=num_samples)
     batch_size = BATCH_SIZE
     inference_data = json.loads(data_df.to_json(orient='records'))
     data_loader = DataLoader(inference_data, batch_size=batch_size, shuffle=False)
@@ -245,6 +228,22 @@ if __name__ == "__main__":
                         type=str, 
                         required=True,
                         help='Path to the data file.')
+    parser.add_argument('--input_key',
+                        type=str,
+                        default='input',
+                        help='Column name for the input data.')
+    parser.add_argument('--output_key',
+                        type=str,
+                        default='output',
+                        help='Column name for the output data.')
+    parser.add_argument('--idx_col',
+                        type=str,
+                        default='idx',
+                        help='Column name for the index.')
+    parser.add_argument('--prompt_path',
+                        type=str,
+                        default=None,
+                        help='Prompt to generate from.')
     parser.add_argument('--output_path', 
                         type=str,
                         required=True,
@@ -253,26 +252,21 @@ if __name__ == "__main__":
                         type=int,
                         default=None,
                         help='Number of samples to generate')
-    parser.add_argument('--train_path',
-                        type=str,
-                        default=None,
-                        help='Path to the training data file. For few shots prompting')
-    parser.add_argument('--shots',
-                        type=int,
-                        default=0,
-                        help='Number of few-shot examples for GPT inference. \
-                            Must be provided with a train_path to sample exemplars.')
     parser.add_argument('--verbose',
                         type=int,
                         default=1,
                         help='Whether to print prompts and answers.')
     
     args = parser.parse_args()
-        
+
     infer(
             model_name=args.model_name,
             model_path=args.model_path,
+            INPUT_KEY = args.input_key,
+            OUTPUT_KEY = args.output_key,
+            IDX_COL = args.idx_col,
             mode=args.mode,
+            intructions = args.instructions,
             input_path=args.input_path,
             output_path=args.output_path,
             num_samples=args.num_samples,
