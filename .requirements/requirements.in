@@ -1,5 +1,5 @@
 # DL/ML
-torch==2.2.1
+torch==2.1.2
 scikit-learn
 
 # NLP
@@ -17,6 +17,7 @@ evaluate
 
 # Tracking
 tensorboard
+wandb
 
 # Optimization
 peft
