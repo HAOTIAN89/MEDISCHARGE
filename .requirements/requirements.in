@@ -17,6 +17,7 @@ evaluate
 
 # Tracking
 tensorboard
+wandb
 
 # Optimization
 peft

@@ -26,9 +26,10 @@ anyio==4.3.0
     # via
     #   httpx
     #   jupyter-server
-    #   langchain-core
     #   starlette
     #   watchfiles
+appdirs==1.4.4
+    # via wandb
 argon2-cffi==23.1.0
     # via jupyter-server
 argon2-cffi-bindings==21.2.0
@@ -66,6 +67,7 @@ certifi==2024.2.2
     #   httpcore
     #   httpx
     #   requests
+    #   sentry-sdk
 cffi==1.16.0
     # via argon2-cffi-bindings
 cfgv==3.4.0
@@ -79,6 +81,7 @@ click==8.1.7
     #   ray
     #   typer
     #   uvicorn
+    #   wandb
 cloudpathlib==0.16.0
     # via weasel
 cloudpickle==3.0.0
@@ -126,6 +129,8 @@ dill==0.3.8
     #   multiprocess
 distlib==0.3.8
     # via virtualenv
+docker-pycreds==0.4.0
+    # via wandb
 evaluate==0.4.1
     # via -r requirements.in
 exceptiongroup==1.2.0
@@ -138,7 +143,7 @@ fastapi==0.110.0
     # via vllm
 fastjsonschema==2.19.1
     # via nbformat
-filelock==3.13.1
+filelock==3.13.3
     # via
     #   datasets
     #   huggingface-hub
@@ -163,6 +168,10 @@ fsspec[http]==2024.2.0
     #   evaluate
     #   huggingface-hub
     #   torch
+gitdb==4.0.11
+    # via gitpython
+gitpython==3.1.42
+    # via wandb
 greenlet==3.0.3
     # via sqlalchemy
 grpcio==1.62.1
@@ -171,13 +180,13 @@ h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
-httpcore==1.0.4
+httpcore==1.0.5
     # via httpx
 httptools==0.6.1
     # via uvicorn
 httpx==0.27.0
     # via jupyterlab
-huggingface-hub==0.21.4
+huggingface-hub==0.22.2
     # via
     #   accelerate
     #   datasets
@@ -200,7 +209,7 @@ idna==3.6
     #   yarl
 importlib-metadata==7.1.0
     # via dask
-ipykernel==6.29.3
+ipykernel==6.29.4
     # via
     #   -r requirements.in
     #   jupyter
@@ -299,7 +308,7 @@ langchain==0.1.13
     # via -r requirements.in
 langchain-community==0.0.29
     # via langchain
-langchain-core==0.1.33
+langchain-core==0.1.36
     # via
     #   langchain
     #   langchain-community
@@ -308,12 +317,12 @@ langchain-text-splitters==0.0.1
     # via langchain
 langcodes==3.3.0
     # via spacy
-langsmith==0.1.31
+langsmith==0.1.37
     # via
     #   langchain
     #   langchain-community
     #   langchain-core
-lightning-utilities==0.11.0
+lightning-utilities==0.11.2
     # via torchmetrics
 locket==1.0.0
     # via partd
@@ -439,9 +448,9 @@ nvidia-nvjitlink-cu12==12.4.99
     #   nvidia-cusparse-cu12
 nvidia-nvtx-cu12==12.1.105
     # via torch
-optimum==1.17.1
+optimum==1.18.0
     # via -r requirements.in
-orjson==3.9.15
+orjson==3.10.0
     # via
     #   aioprometheus
     #   langsmith
@@ -498,7 +507,7 @@ platformdirs==4.2.0
     # via
     #   jupyter-core
     #   virtualenv
-pre-commit==3.6.2
+pre-commit==3.7.0
     # via -r requirements.in
 preshed==3.0.9
     # via
@@ -510,17 +519,19 @@ prompt-toolkit==3.0.43
     # via
     #   ipython
     #   jupyter-console
-protobuf==5.26.0
+protobuf==4.25.3
     # via
     #   ray
     #   tensorboard
     #   transformers
+    #   wandb
 psutil==5.9.8
     # via
     #   accelerate
     #   ipykernel
     #   peft
     #   vllm
+    #   wandb
 ptyprocess==0.7.0
     # via
     #   pexpect
@@ -581,6 +592,7 @@ pyyaml==6.0.1
     #   ray
     #   transformers
     #   uvicorn
+    #   wandb
 pyzmq==25.1.2
     # via
     #   ipykernel
@@ -621,6 +633,7 @@ requests==2.31.0
     #   torchdata
     #   torchtext
     #   transformers
+    #   wandb
     #   weasel
 responses==0.18.0
     # via evaluate
@@ -654,16 +667,21 @@ seaborn==0.13.2
     # via -r requirements.in
 send2trash==1.8.2
     # via jupyter-server
-sentence-transformers==2.6.0
+sentence-transformers==2.6.1
     # via -r requirements.in
 sentencepiece==0.2.0
     # via
     #   transformers
     #   vllm
+sentry-sdk==1.44.0
+    # via wandb
+setproctitle==1.3.3
+    # via wandb
 six==1.16.0
     # via
     #   asttokens
     #   bleach
+    #   docker-pycreds
     #   python-dateutil
     #   rfc3339-validator
     #   tensorboard
@@ -671,6 +689,8 @@ smart-open==6.4.0
     # via
     #   spacy
     #   weasel
+smmap==5.0.1
+    # via gitdb
 sniffio==1.3.1
     # via
     #   anyio
@@ -784,7 +804,7 @@ traitlets==5.14.2
     #   nbconvert
     #   nbformat
     #   qtconsole
-transformers[sentencepiece]==4.39.1
+transformers[sentencepiece]==4.39.2
     # via
     #   -r requirements.in
     #   optimum
@@ -823,6 +843,7 @@ urllib3==2.2.1
     # via
     #   requests
     #   responses
+    #   sentry-sdk
     #   torchdata
 uvicorn[standard]==0.29.0
     # via vllm
@@ -831,6 +852,8 @@ uvloop==0.19.0
 virtualenv==20.25.1
     # via pre-commit
 vllm==0.2.5
+    # via -r requirements.in
+wandb==0.16.5
     # via -r requirements.in
 wasabi==1.1.2
     # via
