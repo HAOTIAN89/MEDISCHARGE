@@ -72,7 +72,17 @@ def todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples=None)
     
 def load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_samples=None):
     '''
-    Loads the input data file and initializes the output data file. 
+    Loads the input data file and initializes the output data file.
+    Arguments:
+        - input_path: str, path to the input data file
+        - input_key: str, column name for the input data
+        - output_key: str, column name for the output data
+        - idx_col: str, column name for the index
+        - output_path: str, path to the output data file
+        - num_samples: int, number of samples to generate
+    Returns:
+        - data_df: pd.DataFrame, the input data
+        - gen_df: pd.DataFrame, already generated samples (may be empty)
     '''
     data_df = load_file(input_path)
     print(f"\nLoaded data file...\n\tSamples: {data_df.shape[0]}\n\tColumns: {list(data_df.columns)}")
@@ -106,7 +116,9 @@ def format_prompt(model_name, input, instruction):
         prompt = f"[INST]\n{inner_prompt}[/INST]\n"
     elif 'llama' in model_name.lower():
         prompt = f"<s>[INST] <<SYS>>\n{inner_prompt} [/INST]"
-    elif 'meditron' in model_name.lower() :
+    elif 'meditron' in model_name.lower():
+        prompt = {inner_prompt}
+    elif 'medischarge' in model_name.lower() :
         prompt = f"{BOS_TOKEN}question\n{inner_prompt}{EOS_TOKEN}\n{BOS_TOKEN}answer\n"
     else:
         raise ValueError(f'{model_name} is not a supported model name')
@@ -129,28 +141,6 @@ def infer_vllm(client, model_name, prompt):
         return [r.outputs[0].text for r in response]
     else:
         return response[0].outputs[0].text
-
-
-def load_few_shot(train_path, shots=1):
-    '''
-    Load a few-shot example from the training data for direct-gpt inference.
-    
-    :param train_path: str, path to the training data file. If None --> no few-shot example.
-    :param shots: int, number of few-shot examples to load
-    '''
-    if train_path is not None and shots > 0:
-        print(f'Loading {shots}-shot exemplar from {train_path}...')
-        train_df = load_file(train_path)
-        sample = train_df.sample(shots)
-        few_shot_prompt = f"Here are {shots} example(s)\n\n"
-        for i in range(shots):
-            dialogue = sample.iloc[i]['conversation']
-            note = sample.iloc[i]['data']
-            few_shot_prompt += f'Example {i+1}:\n\nConversation:\n\n{dialogue}\n\nClinical note:\n\n{note}\n\n'
-    else: 
-        few_shot_prompt = 'Your answer should consist in one or a few paragrpahs of text, not overstructured.'
-    return few_shot_prompt + '\n\n'
-
 
 # ----------------------- Inference ----------------------- #
 
@@ -258,7 +248,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with open(args.prompt_path, 'r') as file:
-        instructions = json.load(file) 
+        instructions = json.load(file)[0] 
 
     infer(
             model_name=args.model_name,
