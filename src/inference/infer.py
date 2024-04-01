@@ -25,7 +25,7 @@ from utils.loading_saving import load_file, save_file
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 # ----------------------- Inference parameters ----------------------- #
 
@@ -49,14 +49,13 @@ PARAMETERS = {
 
 # ----------------------- Inference utilities ----------------------- #
 
-def todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples=None):
+def todo_list(data_df, gen_df, INPUT_KEY, GEN_OUTPUT_KEY, IDX_COL, num_samples=None):
     '''
     Returns the list of samples to generate.
 
     :param data_df: pd.DataFrame, the input data
     :param gen_df: pd.DataFrame, the generated data
     :param input_key: str, remove samples for which the input key is None
-    :param output_key: str, remove samples for which the output key has already been generated in gen_df
     :param num_samples: int, keep only the first num_samples samples (default: None --> all)
     :return: list, the list of indices to generate
     '''
@@ -66,13 +65,13 @@ def todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples=None)
     idx_todo = valid_data[IDX_COL].tolist()
     if num_samples and len(idx_todo) > num_samples:
         idx_todo = idx_todo[:num_samples]
-    idx_done = gen_df[gen_df[OUTPUT_KEY].notnull()][IDX_COL].tolist()
+    idx_done = gen_df[gen_df[GEN_OUTPUT_KEY].notnull()][IDX_COL].tolist()
     idx_todo = [i for i in idx_todo if i not in idx_done]
     if len(idx_todo) == 0:
         raise ValueError(f'All samples already generated.')
     return idx_todo
     
-def load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_samples=None):
+def load_data(input_path, INPUT_KEY, GEN_OUTPUT_KEY, IDX_COL, output_path, num_samples=None):
     '''
     Loads the input data file and initializes the output data file.
     Arguments:
@@ -101,9 +100,9 @@ def load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_sampl
     else:
         print(f"Creating output file...\n\tPath: {output_path}\n\tColumns: {list(data_df.columns)}")
         gen_df = pd.DataFrame(columns = data_df.columns)
-        gen_df[OUTPUT_KEY] = TODO_VAL
+        gen_df[GEN_OUTPUT_KEY] = TODO_VAL
 
-    idx_todo = todo_list(data_df, gen_df, INPUT_KEY, OUTPUT_KEY, IDX_COL, num_samples)
+    idx_todo = todo_list(data_df, gen_df, INPUT_KEY, GEN_OUTPUT_KEY, IDX_COL, num_samples)
     print(f"\tSample left to generate: {len(idx_todo)}")
     data_df = data_df[data_df[IDX_COL].isin(idx_todo)]
     return data_df, gen_df
@@ -149,7 +148,7 @@ def infer_vllm(client, model_name, prompt):
 def infer(model_name,
           model_path, 
           INPUT_KEY,
-          OUTPUT_KEY,
+          GEN_OUTPUT_KEY,
           IDX_COL,
           input_path=None,
           output_path=None, 
@@ -170,7 +169,7 @@ def infer(model_name,
     '''
 
     print(f"\n\n# ----- INFERENCE: model = {model_name}, parameters = {PARAMETERS[model_name]} ----- #\n\n")
-    data_df, gen_df = load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_samples=num_samples)
+    data_df, gen_df = load_data(input_path, INPUT_KEY, GEN_OUTPUT_KEY, IDX_COL, output_path, num_samples=num_samples)
     batch_size = BATCH_SIZE
     inference_data = json.loads(data_df.to_json(orient='records'))
     data_loader = DataLoader(inference_data, batch_size=batch_size, shuffle=False)
@@ -196,7 +195,7 @@ def infer(model_name,
                 print(f'\n\n### ANSWER:\n\n{answer}')
 
         new_batch = pd.DataFrame(batch)
-        new_batch[OUTPUT_KEY] = answers
+        new_batch[GEN_OUTPUT_KEY] = answers
         gen_df = pd.concat([gen_df, new_batch], ignore_index = True)
         save_file(gen_df, output_path, mode='w')
             
@@ -221,9 +220,9 @@ if __name__ == "__main__":
                         type=str,
                         default='prompt',
                         help='Column name for the input data.')
-    parser.add_argument('--output_key',
+    parser.add_argument('--gen_output_key',
                         type=str,
-                        default='gold',
+                        default='generated',
                         help='Column name for the output data.')
     parser.add_argument('--idx_col',
                         type=str,
@@ -249,7 +248,7 @@ if __name__ == "__main__":
             model_name=args.model_name,
             model_path=args.model_path,
             INPUT_KEY = args.input_key,
-            OUTPUT_KEY = args.output_key,
+            GEN_OUTPUT_KEY = args.gen_output_key,
             IDX_COL = args.idx_col,
             input_path=args.input_path,
             output_path=args.output_path,
