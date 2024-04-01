@@ -25,7 +25,7 @@ from utils.loading_saving import load_file, save_file
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
-BATCH_SIZE = 4
+BATCH_SIZE = 64
 
 # ----------------------- Inference parameters ----------------------- #
 
@@ -42,7 +42,9 @@ GREEDY_PARAMETERS = {
 }
 
 PARAMETERS = {
-    'meditron-7b': GREEDY_PARAMETERS
+    'meditron-7b': GREEDY_PARAMETERS,
+    'medischarge-7b-BHC': GREEDY_PARAMETERS,
+    'medischarge-7b-DI': GREEDY_PARAMETERS
 }
 
 # ----------------------- Inference utilities ----------------------- #
@@ -106,12 +108,12 @@ def load_data(input_path, INPUT_KEY, OUTPUT_KEY, IDX_COL, output_path, num_sampl
     data_df = data_df[data_df[IDX_COL].isin(idx_todo)]
     return data_df, gen_df
 
-def format_prompt(model_name, input, instruction):
+def format_prompt(model_name, input):
     """
     Format prompt for inference with model-specific formatting.
     Models supported: meditron, llama, mistral. 
     """   
-    inner_prompt = instruction.format(input)  
+    inner_prompt = input  
     if 'mistral' in model_name.lower():
         prompt = f"[INST]\n{inner_prompt}[/INST]\n"
     elif 'llama' in model_name.lower():
@@ -149,7 +151,6 @@ def infer(model_name,
           INPUT_KEY,
           OUTPUT_KEY,
           IDX_COL,
-          instructions,
           input_path=None,
           output_path=None, 
           num_samples=None,
@@ -186,7 +187,7 @@ def infer(model_name,
     client = vllm.LLM(**kwargs)
     print(f"vLLM client initialized")
     for batch in tqdm(data_loader, total=len(data_loader), position=0, leave=True):
-        prompts = [format_prompt(model_name, input, instruction=instructions) for input in batch[INPUT_KEY]]
+        prompts = [format_prompt(model_name, input) for input in batch[INPUT_KEY]]
         answers = infer_vllm(client, model_name, prompts)
 
         if verbose:
@@ -218,20 +219,16 @@ if __name__ == "__main__":
                         help='Path to the data file.')
     parser.add_argument('--input_key',
                         type=str,
-                        default='input',
+                        default='prompt',
                         help='Column name for the input data.')
     parser.add_argument('--output_key',
                         type=str,
-                        default='output',
+                        default='gold',
                         help='Column name for the output data.')
     parser.add_argument('--idx_col',
                         type=str,
                         default='idx',
                         help='Column name for the index.')
-    parser.add_argument('--prompt_path',
-                        type=str,
-                        required=True,
-                        help='Prompt to generate from.')
     parser.add_argument('--output_path', 
                         type=str,
                         required=True,
@@ -247,16 +244,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    with open(args.prompt_path, 'r') as file:
-        instructions = json.load(file)[0] 
-
     infer(
             model_name=args.model_name,
             model_path=args.model_path,
             INPUT_KEY = args.input_key,
             OUTPUT_KEY = args.output_key,
             IDX_COL = args.idx_col,
-            instructions = instructions,
             input_path=args.input_path,
             output_path=args.output_path,
             num_samples=args.num_samples,
