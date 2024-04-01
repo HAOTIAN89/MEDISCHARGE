@@ -235,7 +235,8 @@ if __name__ == "__main__":
                         help='Path to the output file with generated notes. ')
     parser.add_argument('--num_samples',
                         type=int,
-                        required=True,
+                        required=False,
+                        default = None,
                         help='Number of samples to generate')
     parser.add_argument('--verbose',
                         type=int,
