@@ -23,7 +23,7 @@ if [ "$1" == "medischarge-7b-di" ] || [ "$1" == "all" ]; then
     python3 src/inference/infer.py \
         --model_name medischarge-7b-DI \
         --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-7B-DI/hf_checkpoint \
-        --input_path data/test_phase_1/BHC_test_dataset.jsonl \
+        --input_path data/test_phase_1/DI_test_dataset.jsonl \
         --output_path data/infered/di_short_7b_infered.csv \
         --verbose 0
 fi 
