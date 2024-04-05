@@ -10,6 +10,7 @@ from rouge import Rouge
 from bertscore import BertScore  #
 
 import argparse # added
+from tqdm import tqdm # added
 
 
 def calculate_scores(generated, reference, metrics):
@@ -36,6 +37,8 @@ def calculate_scores(generated, reference, metrics):
     if "meteor" in metrics:
         meteorScorer = evaluate.load("meteor")
         print("meteorScorer initialized")
+        
+    pbar = tqdm(total=len(generated), desc="Processing samples")
 
     def calculate_scores(rows_ref, rows_gen):
         if "bleu" in metrics:
@@ -102,8 +105,7 @@ def calculate_scores(generated, reference, metrics):
         # print progress
         current_row = i + 128
         if current_row % 128 == 0:
-            print(f"Processed {current_row}/{len(generated)} ({
-                current_row / len(generated) * 100:.2f}%) samples.", flush=True)
+            pbar.update(128)
 
     reference.set_index("hadm_id", drop=False, inplace=True)
     generated.set_index("hadm_id", drop=False, inplace=True)
@@ -286,6 +288,9 @@ if __name__ == "__main__":
     )
 
     leaderboard = compute_overall_score(scores)
+    
+    if not os.path.exists(score_dir):
+        os.makedirs(score_dir)
 
     with open(os.path.join(score_dir, "scores.json"), "w") as score_file:
         score_file.write(json.dumps(leaderboard))
