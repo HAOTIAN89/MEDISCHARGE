@@ -14,7 +14,7 @@ class BertScore(nn.Module):
                 nthreads=16,
                 all_layers=False,
                 idf=False,
-                device="cuda",
+                device="cuda" if torch.cuda.is_available() else "cpu",
                 lang="en",
                 rescale_with_baseline=True,
                 baseline_path=None,

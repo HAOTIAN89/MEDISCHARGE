@@ -8,9 +8,13 @@ import evaluate
 from bleu import Bleu
 from rouge import Rouge
 from bertscore import BertScore  #
+from perplexity import Perplexity  #
 
 import argparse # added
 from tqdm import tqdm # added
+
+
+POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "perplexity"}) # added
 
 
 def calculate_scores(generated, reference, metrics):
@@ -37,6 +41,9 @@ def calculate_scores(generated, reference, metrics):
     if "meteor" in metrics:
         meteorScorer = evaluate.load("meteor")
         print("meteorScorer initialized")
+    if "perplexity" in metrics:
+        perplexityScorer = Perplexity()
+        print("perplexityScorer initialized")
         
     pbar = tqdm(total=len(generated), desc="Processing samples")
 
@@ -101,6 +108,16 @@ def calculate_scores(generated, reference, metrics):
                 predictions=rows_gen["discharge_instructions"].tolist(),
             )
             scores["meteor"]["brief_hospital_course"].append(temp["meteor"])
+        if "perplexity" in metrics:
+            temp = perplexityScorer(
+                text=rows_gen["discharge_instructions"].tolist(),
+            )
+            scores["perplexity"]["discharge_instructions"].extend(temp)
+            
+            temp = perplexityScorer(
+                text=rows_gen["brief_hospital_course"].tolist(),
+            )
+            scores["perplexity"]["brief_hospital_course"].extend(temp)
 
         # print progress
         current_row = i + 128
@@ -194,8 +211,6 @@ def compute_overall_score(scores):
     print("Done.")
     return leaderboard
 
-
-POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor"}) # added
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scoring script for the MIMIC-III discharge summary generation task.")
