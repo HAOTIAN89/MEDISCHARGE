@@ -55,5 +55,9 @@ if __name__ == "__main__":
     
     reference, generated = format_generations(bhc_df, di_df)
     
-    reference.to_csv(os.path.join(args.output_path, args.output_name + "_reference.csv"), index=False)
-    generated.to_csv(os.path.join(args.output_path, args.output_name + "_generated.csv"), index=False)
+    # make the output directory if it doesn't exist
+    if not os.path.exists(os.path.join(args.output_path, args.output_name)):
+        os.makedirs(os.path.join(args.output_path, args.output_name)) 
+    
+    reference.to_csv(os.path.join(args.output_path, args.output_name, "discharge_target.csv"), index=False)
+    generated.to_csv(os.path.join(args.output_path, args.output_name, "submission.csv"), index=False)

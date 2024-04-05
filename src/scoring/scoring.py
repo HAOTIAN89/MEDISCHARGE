@@ -9,6 +9,8 @@ from bleu import Bleu
 from rouge import Rouge
 from bertscore import BertScore  #
 
+import argparse # added
+
 
 def calculate_scores(generated, reference, metrics):
     if not metrics:
@@ -100,7 +102,8 @@ def calculate_scores(generated, reference, metrics):
         # print progress
         current_row = i + 128
         if current_row % 128 == 0:
-            print(f"Processed {current_row}/{len(generated)} samples.", flush=True)
+            print(f"Processed {current_row}/{len(generated)} ({
+                current_row / len(generated) * 100:.2f}%) samples.", flush=True)
 
     reference.set_index("hadm_id", drop=False, inplace=True)
     generated.set_index("hadm_id", drop=False, inplace=True)
@@ -190,79 +193,99 @@ def compute_overall_score(scores):
     return leaderboard
 
 
-reference_dir = os.path.join("/app/input/", "ref")
-generated_dir = os.path.join("/app/input/", "res")
-score_dir = "/app/output/"
+POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor"}) # added
 
-print("Reading generated texts...")
-generated = pd.read_csv(
-    os.path.join(generated_dir, "submission.csv"), keep_default_na=False
-)
-reference = pd.read_csv(
-    os.path.join(reference_dir, "discharge_target.csv"), keep_default_na=False
-)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Scoring script for the MIMIC-III discharge summary generation task.")
+    parser.add_argument("--input_dir", type=str, help="Path to the input directory")
+    parser.add_argument("--score_dir", type=str, help="Path to the directory to save the scores")
+    parser.add_argument("--metrics", nargs="+", help="Metrics to calculate")
+    
+    args = parser.parse_args()
+    
+    input_dir = args.input_dir
+    score_dir = args.score_dir
+    
+    input_metrics = args.metrics
+    print(input_metrics)
+    for metric in input_metrics:
+        if metric not in POSSIBLE_METRICS:
+            raise ValueError(f"Invalid metric: {metric}. Please choose from {POSSIBLE_METRICS}")
+    
+        
+    #reference_dir = os.path.join("/app/input/", "ref")
+    #generated_dir = os.path.join("/app/input/", "res")
+    #score_dir = "/app/output/"
 
-# covert all elements to string
-generated["discharge_instructions"] = generated["discharge_instructions"].astype(str)
-reference["discharge_instructions"] = reference["discharge_instructions"].astype(str)
-
-generated["brief_hospital_course"] = generated["brief_hospital_course"].astype(str)
-reference["brief_hospital_course"] = reference["brief_hospital_course"].astype(str)
-
-# convert to single-line strings by removing newline characters
-generated["discharge_instructions"] = generated["discharge_instructions"].str.replace(
-    "\n", " "
-)
-reference["discharge_instructions"] = reference["discharge_instructions"].str.replace(
-    "\n", " "
-)
-
-generated["brief_hospital_course"] = generated["brief_hospital_course"].str.replace(
-    "\n", " "
-)
-reference["brief_hospital_course"] = reference["brief_hospital_course"].str.replace(
-    "\n", " "
-)
-
-# convert all hadm_id to int
-generated["hadm_id"] = generated["hadm_id"].astype(int)
-reference["hadm_id"] = reference["hadm_id"].astype(int)
-
-# check for invalid submissions
-if not generated.shape[0] == reference.shape[0]:
-    raise ValueError(
-        "Submission does not contain the correct number of rows. Please check your submission file."
+    print("Reading generated texts...")
+    generated = pd.read_csv(
+        os.path.join(input_dir, "submission.csv"), keep_default_na=False
+    )
+    reference = pd.read_csv(
+        os.path.join(input_dir, "discharge_target.csv"), keep_default_na=False
     )
 
-if list(generated["hadm_id"].unique()) != list(reference["hadm_id"].unique()):
-    missing_hadm_ids = set(reference["hadm_id"].unique()) - set(
-        generated["hadm_id"].unique()
-    )
-    extra_hadm_ids = set(generated["hadm_id"].unique()) - set(
-        reference["hadm_id"].unique()
-    )
-    print(f"Missing hadm_ids: {missing_hadm_ids}")
-    print(f"Extra hadm_ids: {extra_hadm_ids}")
-    raise ValueError(
-        "Submission does not contain all hadm_ids from the test set. Please check your submission file."
-    )
+    # covert all elements to string
+    generated["discharge_instructions"] = generated["discharge_instructions"].astype(str)
+    reference["discharge_instructions"] = reference["discharge_instructions"].astype(str)
 
-if not generated["hadm_id"].nunique() == len(generated):
-    raise ValueError(
-        "Submission contains duplicate hadm_ids. Please check your submission file."
+    generated["brief_hospital_course"] = generated["brief_hospital_course"].astype(str)
+    reference["brief_hospital_course"] = reference["brief_hospital_course"].astype(str)
+
+    # convert to single-line strings by removing newline characters
+    generated["discharge_instructions"] = generated["discharge_instructions"].str.replace(
+        "\n", " "
+    )
+    reference["discharge_instructions"] = reference["discharge_instructions"].str.replace(
+        "\n", " "
     )
 
-generated = generated.sort_values(by="hadm_id")
-reference = reference.sort_values(by="hadm_id")
-print("Done.")
+    generated["brief_hospital_course"] = generated["brief_hospital_course"].str.replace(
+        "\n", " "
+    )
+    reference["brief_hospital_course"] = reference["brief_hospital_course"].str.replace(
+        "\n", " "
+    )
 
-scores = calculate_scores(
-    generated,
-    reference,
-    metrics=["bleu", "rouge", "bertscore", "meteor"],
-)
+    # convert all hadm_id to int
+    generated["hadm_id"] = generated["hadm_id"].astype(int)
+    reference["hadm_id"] = reference["hadm_id"].astype(int)
 
-leaderboard = compute_overall_score(scores)
+    # check for invalid submissions
+    if not generated.shape[0] == reference.shape[0]:
+        raise ValueError(
+            "Submission does not contain the correct number of rows. Please check your submission file."
+        )
 
-with open(os.path.join(score_dir, "scores.json"), "w") as score_file:
-    score_file.write(json.dumps(leaderboard))
+    if list(generated["hadm_id"].unique()) != list(reference["hadm_id"].unique()):
+        missing_hadm_ids = set(reference["hadm_id"].unique()) - set(
+            generated["hadm_id"].unique()
+        )
+        extra_hadm_ids = set(generated["hadm_id"].unique()) - set(
+            reference["hadm_id"].unique()
+        )
+        print(f"Missing hadm_ids: {missing_hadm_ids}")
+        print(f"Extra hadm_ids: {extra_hadm_ids}")
+        raise ValueError(
+            "Submission does not contain all hadm_ids from the test set. Please check your submission file."
+        )
+
+    if not generated["hadm_id"].nunique() == len(generated):
+        raise ValueError(
+            "Submission contains duplicate hadm_ids. Please check your submission file."
+        )
+
+    generated = generated.sort_values(by="hadm_id")
+    reference = reference.sort_values(by="hadm_id")
+    print("Done.")
+
+    scores = calculate_scores(
+        generated,
+        reference,
+        metrics=input_metrics,
+    )
+
+    leaderboard = compute_overall_score(scores)
+
+    with open(os.path.join(score_dir, "scores.json"), "w") as score_file:
+        score_file.write(json.dumps(leaderboard))
