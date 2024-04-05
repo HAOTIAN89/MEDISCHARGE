@@ -137,6 +137,7 @@ feature_to_function = {
     'discharge_condition': extract_discharge_condition
 }
 
+
 def extract_one_clean_input(text, features_to_include: list) -> str:
     return ''.join([feature_to_function[feature](text) for feature in features_to_include])
 
@@ -196,6 +197,27 @@ def lowercase_first_letter(text):
 def remove_unecessary_tokens(text):
     return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
 
+def remove_section(text, section_name):
+    """
+    Removes a specified section from the text based on its section name.
+    
+    Args:
+    - text (str): The original text from which to remove the section.
+    - section_name (str): The name of the section to remove. Should be in lowercase to match the function specifications.
+    
+    Returns:
+    - str: The text with the specified section removed.
+    """
+    # Define a pattern to match the section header and its contents. This pattern assumes:
+    # - Section headers are formatted as "section_name:".
+    # - Sections are separated by at least one newline.
+    # - The section ends when another section begins or at the text's end.
+    pattern = re.compile(
+        rf'\n?{re.escape(section_name)}:\s*\n{{0,2}}(.*?)(?=\n{{0,2}}[a-z_]+(?: [a-z_]+)*:\s*\n|\Z)', re.DOTALL | re.IGNORECASE
+    )
+    cleaned_text = re.sub(pattern, '', text)
+
+    return cleaned_text
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the data.')
@@ -204,6 +226,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.')
     parser.add_argument('--short_sequences', type= bool, default=False, help='Whether to keep only short sequences. (<2K tokens)') 
     parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
+    parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
 
     args = parser.parse_args()
 
@@ -216,36 +239,43 @@ if __name__ == "__main__":
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
 
     in_out = pd.DataFrame()
+    
+    features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
 
     if args.mode == 'BHC':
         original_bhc_input = get_bhc_input(combined_discharges)
-        processed_bhc_input = extract_clean_inputs(combined_discharges, features_to_include = 
-            [
-                                'sex',
-                                'allergies',
-                                'chief_complaint',
-                                'major_surgical_procedures',
-                                'history_of_present_illness',
-                                'past_medical_history',
-                                'social_history',
-                                'family_history',
-                                'pertinent_results',
-                                'physical_exam',
-                            ])
-        
+        features_to_include = [
+                'sex',
+                'allergies',
+                'chief_complaint',
+                'major_surgical_procedures',
+                'history_of_present_illness',
+                'past_medical_history',
+                'social_history',
+                'family_history',
+                'pertinent_results',
+                'physical_exam',
+            ]
+        processed_bhc_input = extract_clean_inputs(combined_discharges, features_to_include = [
+            feature for feature in features_to_include if feature not in features_to_exclude
+        ])
+
         clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
         in_out['input'] = original_bhc_input
         in_out['output'] = combined_discharges['brief_hospital_course']
     
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
-        processed_di_input = "Brief Hospital Course:\n" + combined_discharges['brief_hospital_course'] + "\n" + extract_clean_inputs(combined_discharges, features_to_include =[
-            'medication_on_admission',
-            'discharge_medications',
-            'discharge_disposition',
-            'discharge_diagnosis',
-            'discharge_condition',
-        ] )
+        features_to_include = [
+                'medication_on_admission',
+                'discharge_medications',
+                'discharge_disposition',
+                'discharge_diagnosis',
+                'discharge_condition',
+            ]
+        processed_di_input = "Brief Hospital Course:\n" + combined_discharges['brief_hospital_course'] + "\n" + extract_clean_inputs(combined_discharges, features_to_include = [
+            feature for feature in features_to_include if feature not in features_to_exclude
+        ])
 
 
         clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
