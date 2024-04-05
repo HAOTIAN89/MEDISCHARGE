@@ -24,3 +24,4 @@ def dataframe_to_jsonl(dataframe, attributes, keys, file_path):
                     print(f"Warning: {attribute} is not a column in the DataFrame.")
                     return
             file.write(f"{json.dumps(row_dict)}\n")
+            

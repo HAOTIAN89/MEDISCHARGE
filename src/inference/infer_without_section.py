@@ -15,18 +15,18 @@ import vllm
 import json as json
 from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
-from utils.preprocessing import remove_section
+
 
 current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(os.path.dirname(current_file_path))
 sys.path.append(parent_directory)
 from utils.loading_saving import load_file, save_file
+from utils.preprocessing import remove_section
 
 # ----------------------- Constants ----------------------- #
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
-BATCH_SIZE = 128
 
 # ----------------------- Inference parameters ----------------------- #
 
@@ -155,6 +155,7 @@ def infer_without_section(model_name,
           output_path=None, 
           num_samples=None,
           verbose=False,
+          batch_size=128,
           section_name=None):
     '''
     Loads a model and generates clinical notes. 
@@ -172,15 +173,17 @@ def infer_without_section(model_name,
 
     print(f"\n\n# ----- INFERENCE: model = {model_name}, parameters = {PARAMETERS[model_name]} ----- #\n\n")
     data_df, gen_df = load_data(input_path, INPUT_KEY, GEN_OUTPUT_KEY, IDX_COL, output_path, num_samples=num_samples)
-    batch_size = BATCH_SIZE
     inference_data = json.loads(data_df.to_json(orient='records'))
 
     ##### Remove section from prompt #####
     inference_data_without_section = []
-    for sample in inference_data:
-        sample_without_section = sample
-        sample_without_section['prompt'] = remove_section(sample['prompt'], section_name)
-        inference_data_without_section.append(sample_without_section)
+    if section_name is None:
+        inference_data_without_section = inference_data
+    else:
+        for sample in inference_data:
+            sample_without_section = sample
+            sample_without_section[INPUT_KEY] = remove_section(sample[INPUT_KEY], section_name)
+            inference_data_without_section.append(sample_without_section)
     #### End of removing section #####
         
     data_loader = DataLoader(inference_data_without_section, batch_size=batch_size, shuffle=False)
@@ -252,6 +255,10 @@ if __name__ == "__main__":
                         type=int,
                         default=1,
                         help='Whether to print prompts and answers.')
+    parser.add_argument('--batch_size',
+                        type=int,
+                        default=256,
+                        help='Batch size for inference.')
     parser.add_argument('--section_name',
                         type=str,
                         default=None,
@@ -269,5 +276,6 @@ if __name__ == "__main__":
             output_path=args.output_path,
             num_samples=args.num_samples,
             verbose=args.verbose,
+            batch_size=args.batch_size,
             section_name=args.section_name
         )

@@ -2,8 +2,15 @@ import pandas as pd
 import regex as re
 import argparse
 from tqdm import tqdm
+import os
+import sys
 tqdm.pandas()
-from src.utils.token_count import get_token_count
+
+
+current_file_path = os.path.abspath(__file__)
+parent_directory = os.path.dirname(os.path.dirname(current_file_path))
+sys.path.append(parent_directory)
+from utils.token_count import get_token_count
 
 
 # ----------------------- Preprocessing utilities ----------------------- #
