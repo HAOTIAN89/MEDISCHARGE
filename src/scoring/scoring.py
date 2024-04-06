@@ -17,7 +17,7 @@ from tqdm import tqdm # added
 POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "perplexity"}) # added
 
 
-def calculate_scores(generated, reference, metrics):
+def calculate_scores(generated, reference, metrics, batch_size=128):
     if not metrics:
         raise ValueError("No metrics specified for scoring.")
     print("Beginning scoring...")
@@ -120,14 +120,13 @@ def calculate_scores(generated, reference, metrics):
             scores["perplexity"]["brief_hospital_course"].extend(temp)
 
         # print progress
-        current_row = i + 128
-        if current_row % 128 == 0:
-            pbar.update(128)
+        current_row = i + batch_size
+        if current_row % batch_size == 0:
+            pbar.update(batch_size)
 
     reference.set_index("hadm_id", drop=False, inplace=True)
     generated.set_index("hadm_id", drop=False, inplace=True)
 
-    batch_size = 128
     for i in range(0, len(generated), batch_size):
         rows_ref = reference[i : i + batch_size]
         rows_gen = generated[i : i + batch_size]
@@ -217,6 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_dir", type=str, help="Path to the input directory")
     parser.add_argument("--score_dir", type=str, help="Path to the directory to save the scores")
     parser.add_argument("--metrics", nargs="+", help="Metrics to calculate")
+    parser.add_argument("--batch_size", type=int, default=128, help="Batch size for scoring")
     
     args = parser.parse_args()
     
@@ -300,6 +300,7 @@ if __name__ == "__main__":
         generated,
         reference,
         metrics=input_metrics,
+        batch_size=args.batch_size,
     )
 
     leaderboard = compute_overall_score(scores)
