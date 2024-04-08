@@ -13,6 +13,11 @@ def combine_files(bhc_path, di_path, output_path):
     # Merge the two dataframes on the 'idx' column
     combined_df = pd.merge(bhc_df[['hadm_id', 'brief_hospital_course']], di_df[['hadm_id', 'discharge_instructions']], on='hadm_id')   
     
+    # print out the length of three dataframes
+    print('Length of BHC dataframe:', len(bhc_df))
+    print('Length of DI dataframe:', len(di_df))
+    print('Length of combined dataframe:', len(combined_df))
+    
     # Save the combined dataframe to a new CSV file
     combined_df.to_csv(output_path, index=False)
     

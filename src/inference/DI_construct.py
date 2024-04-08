@@ -14,7 +14,13 @@ from tqdm import tqdm
 tqdm.pandas()
 
 strategy = [["medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"], 
-            ["discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]]
+            ["discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"],
+            ["medication_on_admission", "discharge_disposition", "discharge_diagnosis", "discharge_condition"],
+            ["discharge_disposition", "discharge_diagnosis", "discharge_condition"],
+            ["discharge_medications"],
+            ['discharge_condition'],
+            ['discharge_diagnosis'],
+            ]
 
 system_prompt = "You are a medical assistant. Your task is to write the discharge instructions corresponding to the following hospital discharge.\n\n"
 
@@ -67,13 +73,15 @@ def construct_DI_test (discharge_dataset: str, target_dataset: str, generated_bh
                 break
             if select in select_strategy[-1]:
                 final_select = select_strategy[-1]
-                print("no suitable strategy found")
+                print("No suitable strategy found.")
         test_combined_discharge_all.at[index, 'input_of_di_new'] = extract_clean_inputs(test_combined_discharge_all.iloc[index], features_to_include=final_select)
     test_combined_discharge_all['input_of_di_new'] = system_prompt + "Brief Hospital Course:\n" + test_combined_discharge_all['generated'] + "\n\n" + test_combined_discharge_all['input_of_di_new']
     test_combined_discharge_all['input_of_di_new'] = test_combined_discharge_all['input_of_di_new'].progress_apply(remove_unecessary_tokens)
     test_combined_discharge_all['input_of_di_new_tokens'] = test_combined_discharge_all['input_of_di_new'].progress_apply(get_token_count)
     # check how many rows where its input_of_bhc_new_tokens is greater than 2048
     print("The percentage of the di test set outliers: ", len(test_combined_discharge_all[test_combined_discharge_all['input_of_di_new_tokens'] > 2048]))
+    if len(test_combined_discharge_all[test_combined_discharge_all['input_of_di_new_tokens'] > 2048]) > 0:
+        raise ValueError("The input_of_di_new_tokens is greater than 2048.")
     print("the length of original test set: ", len(test_combined_discharge))
     print("the length of new test set: ", len(test_combined_discharge_all))
     
