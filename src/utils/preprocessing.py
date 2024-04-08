@@ -148,11 +148,14 @@ feature_to_function = {
 def extract_one_clean_input(text, features_to_include: list) -> str:
     return ''.join([feature_to_function[feature](text) for feature in features_to_include])
 
-def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list) -> pd.DataFrame:
+def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list):
     for feature in features_to_include:
         if feature not in feature_to_function:
-            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")    
-    extracted_features = combined_discharges['text'].progress_apply(extract_one_clean_input, features_to_include=features_to_include)
+            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")  
+    if isinstance(combined_discharges['text'], str): 
+        extracted_features = extract_one_clean_input(combined_discharges['text'], features_to_include=features_to_include)      
+    else:
+        extracted_features = combined_discharges['text'].progress_apply(extract_one_clean_input, features_to_include=features_to_include)
 
     return extracted_features
 
