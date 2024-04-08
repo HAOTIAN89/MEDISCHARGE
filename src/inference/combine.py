@@ -1,5 +1,10 @@
+import sys
+sys.path.append('../')
 import argparse
 import pandas as pd
+from utils.preprocessing import load_data
+
+test_targets_path = '../../data/test_phase_1/discharge_target.csv.gz'
 
 def combine_files(bhc_path, di_path, output_path):
     # Load the CSV files
@@ -18,8 +23,12 @@ def combine_files(bhc_path, di_path, output_path):
     print('Length of DI dataframe:', len(di_df))
     print('Length of combined dataframe:', len(combined_df))
     
+    # load the original test_targets dataframe to order the hadm_id of combined_df
+    test_targets = load_data(test_targets_path)
+    combined_df_ordered = combined_df.set_index('hadm_id').reindex(test_targets['hadm_id']).reset_index()
+    
     # Save the combined dataframe to a new CSV file
-    combined_df.to_csv(output_path, index=False)
+    combined_df_ordered.to_csv(output_path, index=False)
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Combine two CSV files.')
