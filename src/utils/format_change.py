@@ -14,9 +14,12 @@ def dataframe_to_jsonl(dataframe, attributes, keys, file_path):
     if len(attributes) != len(keys):
         raise ValueError("The length of attributes and keys must be the same.")
     
+    if not dataframe.index.name or dataframe.index.name != 'hadm_id':
+        raise ValueError("The DataFrame index must be 'hadm_id'.")
+    
     with open(file_path, 'w') as file:
         for idx, row in tqdm(dataframe.iterrows()):
-            row_dict = {"idx": idx + 1}
+            row_dict = {"hadm_id": idx}
             for attribute, key in zip(attributes, keys):
                 if attribute in row:
                     row_dict[key] = row[attribute]
