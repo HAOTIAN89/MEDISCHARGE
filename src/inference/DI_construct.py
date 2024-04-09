@@ -81,7 +81,7 @@ def construct_DI_test (discharge_dataset: str, target_dataset: str, generated_bh
     # check how many rows where its input_of_bhc_new_tokens is greater than 2048
     print("The percentage of the di test set outliers: ", len(test_combined_discharge_all[test_combined_discharge_all['input_of_di_new_tokens'] > 2048]))
     if len(test_combined_discharge_all[test_combined_discharge_all['input_of_di_new_tokens'] > 2048]) > 0:
-        raise ValueError("The input_of_di_new_tokens is greater than 2048.")
+        raise ValueError("The input_of_di_new_tokens is greater than 2048, so you need to modify the select_strategy.")
     print("the length of original test set: ", len(test_combined_discharge))
     print("the length of new test set: ", len(test_combined_discharge_all))
     
