@@ -15,9 +15,19 @@ from utils.token_count import get_token_count
 
 # ----------------------- Preprocessing utilities ----------------------- #
 
-def load_data(file_path: str) -> pd.DataFrame:
+def load_data(file_path: str, type='gzip') -> pd.DataFrame:
     """Loads the data from the file_path."""
-    return pd.read_csv(file_path,compression='gzip')
+    
+    if type == 'gzip':
+        return pd.read_csv(file_path, compression='gzip')
+    elif type == 'csv':
+        return pd.read_csv(file_path)
+    elif type == 'json':
+        return pd.read_json(file_path)
+    elif type == 'jsonl':
+        return pd.read_json(file_path, lines=True)
+ 
+    raise ValueError(f"Type {type} not supported.")
 
 def save_data(data: pd.DataFrame, file_path: str):
     """Saves the data to the file_path."""
@@ -214,7 +224,7 @@ def remove_enumerations(text):
     text = re.sub(r'^(\d+[a-z]*\.\s*|\d+\.\s*)', '', text, flags=re.MULTILINE)
     return text
 
-def treat_weird_tokens(text):
+def treat_weird_tokens(text) -> str:
     text = text.replace('(_)', '_')
     text = text.replace('"_"', '_')
     text = text.replace('@', 'at')
@@ -222,7 +232,7 @@ def treat_weird_tokens(text):
     return text
 
 
-def treat_equals(text):
+def treat_equals(text) -> str:
     """
     When there are more than 2,3,4,5 or equals we simply remove them.
     When there 6+ equls replace by \n
@@ -234,9 +244,9 @@ def treat_equals(text):
 
     return text
 
-def lowercase_first_letter(text):
+def lowercase_first_letter(text) -> str:
     """
-    ?????
+    Lowercase the first letter of words.
     """
     pattern = r'\b([A-Za-z])([a-z]*)(?![A-Z]|\.)\b'
     
@@ -256,6 +266,8 @@ if __name__ == "__main__":
     parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default=None)
     parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
     parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
+    parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', default=None)
+    parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', default=None)
 
     args = parser.parse_args()
 
@@ -268,6 +280,8 @@ if __name__ == "__main__":
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
 
     in_out = pd.DataFrame()
+    
+    in_out['idx'] = combined_discharges['hadm_id']
     
     features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
 
@@ -290,8 +304,8 @@ if __name__ == "__main__":
         ])
 
         clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = clean_bhc_input
-        in_out['output'] = combined_discharges['brief_hospital_course']
+        in_out['prompt'] = clean_bhc_input
+        in_out['reference'] = combined_discharges['brief_hospital_course']
     
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
@@ -302,22 +316,39 @@ if __name__ == "__main__":
                 'discharge_diagnosis',
                 'discharge_condition',
             ]
-        processed_di_input = "Brief Hospital Course:\n" + combined_discharges['brief_hospital_course'] + "\n" + extract_clean_inputs(combined_discharges, features_to_include = [
+        processed_di_input = extract_clean_inputs(combined_discharges, features_to_include = [
             feature for feature in features_to_include if feature not in features_to_exclude
         ])
 
-
         clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = clean_di_input
-        in_out['output'] = combined_discharges['discharge_instructions']
+        in_out['prompt'] = clean_di_input
+        in_out['reference'] = combined_discharges['discharge_instructions']
     
-    
+        # Add the generated BHC to the input prompt
+        if args.generated_bhc_path:
+            generated_bhc = load_data(args.generated_bhc_path)
+            
+            # match by idx and add the generated bhc to the in_out dataframe
+            in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: x + 'brief hospital course: \n' + generated_bhc[generated_bhc['idx'] == x['idx']]['generated_bhc'].values[0] + '\n')
+        
+        # Else add the original BHC to the prompt
+        else: 
+            in_out['prompt'] = in_out['prompt'] + 'brief hospital course: \n' + combined_discharges['brief_hospital_course'] + '\n'
+        
+    if args.prompt_path:
+        try:
+            prompt = load_data(args.prompt_path, type='json')            
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
+
+        assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
+        
+        in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+        
     if args.max_tokens:
-        in_out['token_count'] = in_out['input'].progress_apply(get_token_count)
+        in_out['token_count'] = in_out['prompt'].progress_apply(get_token_count)
         in_out = in_out[in_out['token_count'] < args.max_tokens]
         in_out.drop(columns=['token_count'], inplace=True)
-    
-    in_out['idx'] = combined_discharges['hadm_id']
 
     save_data(in_out, args.output_path)
 
