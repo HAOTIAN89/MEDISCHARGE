@@ -6,7 +6,8 @@ python3 src/utils/preprocessing.py \
     --output_path data/experiments/{experiment_name}/input/BHC.csv.gz \
     --max_tokens 1545 \
     --mode BHC \
-    --prompt_path src/utils/prompts/bhc_test_prompt.json
+    --prompt_path src/utils/prompts/bhc_test_prompt.json \
+    --features_to_exclude physical_exam
 
 python3 infer.py \
     --model_name medischarge-7b-BHC \
@@ -23,7 +24,8 @@ python3 src/utils/preprocessing.py \
     --max_tokens 1700 \
     --mode DI \
     --prompt_path src/utils/prompts/di_test_prompt.json \
-    --generated_bhc_path data/experiments/{experiment_name}/output/BHC.csv
+    --generated_bhc_path data/experiments/{experiment_name}/output/BHC.csv \
+    --features_to_exclude physical_exam
 
 python3 infer.py \
     --model_name medischarge-7b-DI \
