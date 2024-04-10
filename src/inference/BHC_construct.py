@@ -30,11 +30,18 @@ strategy = [
     ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam'],
     ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results'],
     ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam'],
+    ['sex', 'allergies', 'chief_complaint', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'past_medical_history'],
 ]
 
 system_prompt = "You are a medical assistant. Your task is to write the brief hospital course corresponding to the following hospital discharge.\n\n"
 
-def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed_bhc_test: str, select_strategy: list):
+def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed_bhc_test: str, select_strategy: list, max_length: int, cutting_length: int):
     test_discharge = load_data(discharge_dataset)
     test_targets = load_data(target_dataset)
     test_combined_discharge = build_combined_discharge(test_discharge, test_targets)
@@ -75,7 +82,7 @@ def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed
             total_tokens = 0
             for section in select:
                 total_tokens += row[section + "_tokens"]
-            if total_tokens < 1848:  # 2048 - 200
+            if total_tokens < cutting_length: 
                 final_select = select
                 break
             if select in select_strategy[-1]:
@@ -85,10 +92,12 @@ def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed
     test_combined_discharge['input_of_bhc_new'] = system_prompt + test_combined_discharge['input_of_bhc_new']
     test_combined_discharge['input_of_bhc_new'] = test_combined_discharge['input_of_bhc_new'].progress_apply(remove_unecessary_tokens)
     test_combined_discharge['input_of_bhc_new_tokens'] = test_combined_discharge['input_of_bhc_new'].progress_apply(get_token_count)
-    # check how many rows where its input_of_bhc_new_tokens is greater than 2048
-    print("The percentage of the di test set outliers: ", len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > 2048]))
-    if len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > 2048]) > 0:
-        raise ValueError("The input_of_bhc_new_tokens is greater than 2048.")
+    # check how many rows where its input_of_bhc_new_tokens is greater than max_length
+    print("The percentage of the di test set outliers: ", len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]))
+    if len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]) > 0:
+        # print out all length of the outliers
+        print(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]['input_of_bhc_new_tokens'])
+        raise ValueError("The input_of_bhc_new_tokens is greater than max_length, and you should modify the select_strategy.")
     
     # save the constructed BHC test set
     test_combined_discharge.set_index('hadm_id', inplace=True)
@@ -111,10 +120,18 @@ if __name__ == '__main__':
                         type=str, 
                         default="/home/haotian/make-discharge-me/data/test_phase_1/discharge_target.csv.gz",
                         help='Path to the discharge_target.csv.gz')
+    parser.add_argument('--max_length',
+                        type=int,
+                        default=2048,
+                        help='The maximum length of the input')
+    parser.add_argument('--cutting_length',
+                        type=int,
+                        default=1548,
+                        help='The length to cut the input')
         
     args = parser.parse_args()
     
-    construct_BHC_test(args.discharge_dataset, args.target_dataset, args.constructed_bhc_test, args.select_strategy)
+    construct_BHC_test(args.discharge_dataset, args.target_dataset, args.constructed_bhc_test, args.select_strategy, args.max_length, args.cutting_length)
         
         
     
