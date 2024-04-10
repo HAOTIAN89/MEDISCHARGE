@@ -15,9 +15,19 @@ from utils.token_count import get_token_count
 
 # ----------------------- Preprocessing utilities ----------------------- #
 
-def load_data(file_path: str) -> pd.DataFrame:
+def load_data(file_path: str, type='gzip') -> pd.DataFrame:
     """Loads the data from the file_path."""
-    return pd.read_csv(file_path,compression='gzip')
+    
+    if type == 'gzip':
+        return pd.read_csv(file_path, compression='gzip')
+    elif type == 'csv':
+        return pd.read_csv(file_path)
+    elif type == 'json':
+        return pd.read_json(file_path)
+    elif type == 'jsonl':
+        return pd.read_json(file_path, lines=True)
+ 
+    raise ValueError(f"Type {type} not supported.")
 
 def save_data(data: pd.DataFrame, file_path: str):
     """Saves the data to the file_path."""
@@ -126,6 +136,24 @@ def extract_discharge_condition(text):
     discharge_condition_text = "Discharge Condition: \n" + ''.join(discharge_condition)
     return discharge_condition_text
 
+feature_to_header = {
+    'sex': 'Sex',
+    'allergies': 'Allergies',
+    'chief_complaint': 'Chief Complaint',
+    'major_surgical_procedures': 'Major Surgical or Invasive Procedure',
+    'history_of_present_illness': 'History of Present Illness',
+    'past_medical_history': 'Past Medical History',
+    'social_history': 'Social History',
+    'family_history': 'Family History',
+    'physical_exam': 'Physical Exam',
+    'pertinent_results': 'Pertinent Results',
+    'medication_on_admission': 'Medications on Admission',
+    'discharge_medications': 'Discharge Medications',
+    'discharge_disposition': 'Discharge Disposition',
+    'discharge_diagnosis': 'Discharge Diagnosis',
+    'discharge_condition': 'Discharge Condition'
+}
+
 feature_to_function = {
     'sex': extract_sex, #important
     'allergies': extract_allergies, 
@@ -145,13 +173,35 @@ feature_to_function = {
 }
 
 
-def extract_one_clean_input(text, features_to_include: list) -> str:
-    return ''.join([feature_to_function[feature](text) for feature in features_to_include])
+def extract_one_clean_input(text: str, features_to_include: list) -> str:
+    """
+        Extracts the features from the text and returns a clean input, blanking the features not included.
+        
+        Args:
+            text (str): input text
+            features_to_include (list): list of features to include in the clean input
+            
+        Returns:
+            (str) clean input
+    """
+    
+    extracted_features = []
+    for feature in feature_to_function.keys():
+        if feature in features_to_include:
+            extracted_features.append(feature_to_function[feature](text) + '\n')
+            continue
+        
+        # BLANK SECTION with header if feature not included
+        extracted_features.append('\n' + feature_to_header[feature] + ': \n')
+        
+    return ''.join(extracted_features)
+            
 
 def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list):
     for feature in features_to_include:
         if feature not in feature_to_function:
             raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")  
+        
     if isinstance(combined_discharges['text'], str): 
         extracted_features = extract_one_clean_input(combined_discharges['text'], features_to_include=features_to_include)      
     else:
@@ -174,7 +224,7 @@ def remove_enumerations(text):
     text = re.sub(r'^(\d+[a-z]*\.\s*|\d+\.\s*)', '', text, flags=re.MULTILINE)
     return text
 
-def treat_weird_tokens(text):
+def treat_weird_tokens(text) -> str:
     text = text.replace('(_)', '_')
     text = text.replace('"_"', '_')
     text = text.replace('@', 'at')
@@ -182,7 +232,7 @@ def treat_weird_tokens(text):
     return text
 
 
-def treat_equals(text):
+def treat_equals(text) -> str:
     """
     When there are more than 2,3,4,5 or equals we simply remove them.
     When there 6+ equls replace by \n
@@ -194,9 +244,9 @@ def treat_equals(text):
 
     return text
 
-def lowercase_first_letter(text):
+def lowercase_first_letter(text) -> str:
     """
-    ?????
+    Lowercase the first letter of words.
     """
     pattern = r'\b([A-Za-z])([a-z]*)(?![A-Z]|\.)\b'
     
@@ -207,48 +257,31 @@ def lowercase_first_letter(text):
 def remove_unecessary_tokens(text):
     return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
 
-def remove_section(text, section_name):
-    """
-    Removes a specified section from the text based on its section name.
-    
-    Args:
-    - text (str): The original text from which to remove the section.
-    - section_name (str): The name of the section to remove. Should be in lowercase to match the function specifications.
-    
-    Returns:
-    - str: The text with the specified section removed.
-    """
-    # Define a pattern to match the section header and its contents. This pattern assumes:
-    # - Section headers are formatted as "section_name:".
-    # - Sections are separated by at least one newline.
-    # - The section ends when another section begins or at the text's end.
-    pattern = re.compile(
-        rf'\n?{re.escape(section_name)}:\s*\n{{0,2}}(.*?)(?=\n{{0,2}}[a-z_]+(?: [a-z_]+)*:\s*\n|\Z)', re.DOTALL | re.IGNORECASE
-    )
-    cleaned_text = re.sub(pattern, '', text)
-
-    return cleaned_text
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the data.')
-    parser.add_argument('--discharges_path', type=str, help='Path to the discharges file.')
-    parser.add_argument('--discharges_target_path', type=str, help='Path to the discharges target file.')
+    parser.add_argument('--discharge_path', type=str, help='Path to the discharge file.')
+    parser.add_argument('--discharge_target_path', type=str, help='Path to the discharge target file.')
     parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.')
-    parser.add_argument('--short_sequences', type= bool, default=False, help='Whether to keep only short sequences. (<2K tokens)') 
+    parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default=None)
     parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
     parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
+    parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', default=None)
+    parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', default=None)
 
     args = parser.parse_args()
 
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
 
-    discharges_df = load_data(args.discharges_path)
-    discharges_target_df = load_data(args.discharges_target_path)
+    discharges_df = load_data(args.discharge_path)
+    discharges_target_df = load_data(args.discharge_target_path)
 
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
 
     in_out = pd.DataFrame()
+    
+    in_out['idx'] = combined_discharges['hadm_id']
     
     features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
 
@@ -271,8 +304,8 @@ if __name__ == "__main__":
         ])
 
         clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = original_bhc_input
-        in_out['output'] = combined_discharges['brief_hospital_course']
+        in_out['prompt'] = clean_bhc_input
+        in_out['reference'] = combined_discharges['brief_hospital_course']
     
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
@@ -283,22 +316,39 @@ if __name__ == "__main__":
                 'discharge_diagnosis',
                 'discharge_condition',
             ]
-        processed_di_input = "Brief Hospital Course:\n" + combined_discharges['brief_hospital_course'] + "\n" + extract_clean_inputs(combined_discharges, features_to_include = [
+        processed_di_input = extract_clean_inputs(combined_discharges, features_to_include = [
             feature for feature in features_to_include if feature not in features_to_exclude
         ])
 
-
         clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = original_di_input
-        in_out['output'] = combined_discharges['discharge_instructions']
+        in_out['prompt'] = clean_di_input
+        in_out['reference'] = combined_discharges['discharge_instructions']
     
-    
-    if args.short_sequences:
-        in_out['token_count'] = in_out['input'].progress_apply(get_token_count)
-        in_out = in_out[in_out['token_count'] < 1950]
+        # Add the generated BHC to the input prompt
+        if args.generated_bhc_path:
+            generated_bhc = load_data(args.generated_bhc_path)
+            
+            # match by idx and add the generated bhc to the in_out dataframe
+            in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: x + 'brief hospital course: \n' + generated_bhc[generated_bhc['idx'] == x['idx']]['generated_bhc'].values[0] + '\n')
+        
+        # Else add the original BHC to the prompt
+        else: 
+            in_out['prompt'] = in_out['prompt'] + 'brief hospital course: \n' + combined_discharges['brief_hospital_course'] + '\n'
+        
+    if args.prompt_path:
+        try:
+            prompt = load_data(args.prompt_path, type='json')            
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
+
+        assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
+        
+        in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+        
+    if args.max_tokens:
+        in_out['token_count'] = in_out['prompt'].progress_apply(get_token_count)
+        in_out = in_out[in_out['token_count'] < args.max_tokens]
         in_out.drop(columns=['token_count'], inplace=True)
-    
-    in_out['idx'] = in_out.index
 
     save_data(in_out, args.output_path)
 

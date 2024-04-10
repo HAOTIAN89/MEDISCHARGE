@@ -41,9 +41,6 @@ def calculate_scores(generated, reference, metrics, batch_size=128):
     if "meteor" in metrics:
         meteorScorer = evaluate.load("meteor")
         print("meteorScorer initialized")
-    if "perplexity" in metrics:
-        perplexityScorer = Perplexity()
-        print("perplexityScorer initialized")
         
     pbar = tqdm(total=len(generated), desc="Processing samples")
 
@@ -108,17 +105,7 @@ def calculate_scores(generated, reference, metrics, batch_size=128):
                 predictions=rows_gen["discharge_instructions"].tolist(),
             )
             scores["meteor"]["brief_hospital_course"].append(temp["meteor"])
-        if "perplexity" in metrics:
-            temp = perplexityScorer(
-                text=rows_gen["discharge_instructions"].tolist(),
-            )
-            scores["perplexity"]["discharge_instructions"].extend(temp)
-            
-            temp = perplexityScorer(
-                text=rows_gen["brief_hospital_course"].tolist(),
-            )
-            scores["perplexity"]["brief_hospital_course"].extend(temp)
-
+       
         # print progress
         current_row = i + batch_size
         if current_row % batch_size == 0:
