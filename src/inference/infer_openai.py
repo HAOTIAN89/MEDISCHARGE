@@ -13,7 +13,7 @@ from src.utils.loading_saving import load_file, save_file
 
 #from utils.prompts import advice_prompt, student_prompt, rec_prompt, rec_prompt_fast
 
-KEY_PATH = 'utils/keys.json'
+KEY_PATH = '../src/inference/keys.json'
 # MODEL = 'gpt-4-0125-preview'
 MODEL = 'gpt-3.5-turbo-0125'
 
@@ -24,7 +24,7 @@ class GPTWrapper():
     def __init__(self, model=MODEL, key_path=KEY_PATH):
 
         self.model = model
-        self.max_tokens_per_batch = 2000
+        self.max_tokens_per_batch = 60
         self.prompt = None
         self.max_tokens = 2000
         self.temperature = 0.7
@@ -129,13 +129,14 @@ class GPTWrapper():
             msg_len = self.count_tokens(message)
 
             if nb_batches == 0:
-                batches.append(self.new_batch(message, msg_len)) 
+                batches.append(self.new_batch(idx, message, msg_len)) 
             else:
                 current_partition = batches[-1]
-                if current_partition["total_nb_token"] + msg_len <= self.max_tokens_per_batch:
+                if (current_partition["total_nb_token"] + msg_len) <= self.max_tokens_per_batch:
                     current_partition["batch"] = pd.concat([current_partition["batch"], pd.DataFrame({'idx': [idx], 'messages': [message]})])
                     current_partition["total_nb_token"] += msg_len
                 else:
+
                     batches.append(self.new_batch(idx, message, msg_len))
         
         return batches
@@ -228,6 +229,9 @@ class GPTWrapper():
         if os.path.exists(save_path):
             answers = load_file(save_path)
             print(f"Loaded {answers.shape[0]} answers from {save_path}. Resuming generation.")
+            if answers.shape[0] == user_prompts.shape[0]:
+                print("All prompts have already been answered.")
+                return answers
         else:
             answers = pd.DataFrame(columns=["idx", "prompt", "answer"])
         
@@ -236,7 +240,7 @@ class GPTWrapper():
         user_prompts = user_prompts[~user_prompts["idx"].isin(done_idx)].reset_index(drop=True)
         
         user_prompts['messages'] = user_prompts['prompt'].apply(lambda x: self.build_messages(x, sys_prompt))
-        batches = self.partition(user_prompts['idx', 'messages'])
+        batches = self.partition(user_prompts[['idx', 'messages']])
 
         for i, batch_ in enumerate(batches):
             batch = batch_["batch"]['messages']
@@ -250,13 +254,12 @@ class GPTWrapper():
 
             current_answers = pd.DataFrame({'idx': idxs,'answer': current_answers})
             current_answers = current_answers.merge(user_prompts[['idx', 'prompt']], on='idx', how='left')
-            current_answers.drop('messages', axis=1, inplace=True)
             answers = pd.concat([answers, current_answers], axis=0)
             save_file(answers, save_path)
 
-            time_to_wait = max(5, 60 - (time.time() - start_time))
-            print(f"\nWaiting {time_to_wait} seconds before next batch.")
             if i < len(batches) - 1:
+                time_to_wait = max(5, 60 - (time.time() - start_time))
+                print(f"\nWaiting {time_to_wait} seconds before next batch.")
                 time.sleep(time_to_wait)
         
         return answers
