@@ -85,7 +85,7 @@ def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed
             if total_tokens < cutting_length: 
                 final_select = select
                 break
-            if select in select_strategy[-1]:
+            if select == select_strategy[-1]:
                 final_select = select_strategy[-1]
                 print("no suitable strategy found")
         test_combined_discharge.at[index, 'input_of_bhc_new'] = extract_clean_inputs(test_combined_discharge.iloc[index], features_to_include=final_select)
@@ -95,10 +95,10 @@ def construct_BHC_test (discharge_dataset: str, target_dataset: str, constructed
     # check how many rows where its input_of_bhc_new_tokens is greater than max_length
     print("The percentage of the di test set outliers: ", len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]))
     if len(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]) > 0:
-        # print out all length of the outliers
+        print("Show out all length of outliers")
         print(test_combined_discharge[test_combined_discharge['input_of_bhc_new_tokens'] > max_length]['input_of_bhc_new_tokens'])
-        raise ValueError("The input_of_bhc_new_tokens is greater than max_length, and you should modify the select_strategy.")
-    
+        raise ValueError("The length of input_of_bhc_new_tokens is greater than max_length.")
+        
     # save the constructed BHC test set
     test_combined_discharge.set_index('hadm_id', inplace=True)
     dataframe_to_jsonl(test_combined_discharge, attributes=['input_of_bhc_new', 'brief_hospital_course'], keys=['prompt', 'gold'], file_path=constructed_bhc_test)
