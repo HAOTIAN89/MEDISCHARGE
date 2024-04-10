@@ -126,6 +126,24 @@ def extract_discharge_condition(text):
     discharge_condition_text = "Discharge Condition: \n" + ''.join(discharge_condition)
     return discharge_condition_text
 
+feature_to_header = {
+    'sex': 'Sex',
+    'allergies': 'Allergies',
+    'chief_complaint': 'Chief Complaint',
+    'major_surgical_procedures': 'Major Surgical or Invasive Procedure',
+    'history_of_present_illness': 'History of Present Illness',
+    'past_medical_history': 'Past Medical History',
+    'social_history': 'Social History',
+    'family_history': 'Family History',
+    'physical_exam': 'Physical Exam',
+    'pertinent_results': 'Pertinent Results',
+    'medication_on_admission': 'Medications on Admission',
+    'discharge_medications': 'Discharge Medications',
+    'discharge_disposition': 'Discharge Disposition',
+    'discharge_diagnosis': 'Discharge Diagnosis',
+    'discharge_condition': 'Discharge Condition'
+}
+
 feature_to_function = {
     'sex': extract_sex, #important
     'allergies': extract_allergies, 
@@ -145,13 +163,35 @@ feature_to_function = {
 }
 
 
-def extract_one_clean_input(text, features_to_include: list) -> str:
-    return ''.join([feature_to_function[feature](text) for feature in features_to_include])
+def extract_one_clean_input(text: str, features_to_include: list) -> str:
+    """
+        Extracts the features from the text and returns a clean input, blanking the features not included.
+        
+        Args:
+            text (str): input text
+            features_to_include (list): list of features to include in the clean input
+            
+        Returns:
+            (str) clean input
+    """
+    
+    extracted_features = []
+    for feature in feature_to_function.keys():
+        if feature in features_to_include:
+            extracted_features.append(feature_to_function[feature](text) + '\n')
+            continue
+        
+        # BLANK SECTION with header if feature not included
+        extracted_features.append('\n' + feature_to_header[feature] + ': \n')
+        
+    return ''.join(extracted_features)
+            
 
 def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list):
     for feature in features_to_include:
         if feature not in feature_to_function:
             raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")  
+        
     if isinstance(combined_discharges['text'], str): 
         extracted_features = extract_one_clean_input(combined_discharges['text'], features_to_include=features_to_include)      
     else:
@@ -207,34 +247,13 @@ def lowercase_first_letter(text):
 def remove_unecessary_tokens(text):
     return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
 
-def remove_section(text, section_name):
-    """
-    Removes a specified section from the text based on its section name.
-    
-    Args:
-    - text (str): The original text from which to remove the section.
-    - section_name (str): The name of the section to remove. Should be in lowercase to match the function specifications.
-    
-    Returns:
-    - str: The text with the specified section removed.
-    """
-    # Define a pattern to match the section header and its contents. This pattern assumes:
-    # - Section headers are formatted as "section_name:".
-    # - Sections are separated by at least one newline.
-    # - The section ends when another section begins or at the text's end.
-    pattern = re.compile(
-        rf'\n?{re.escape(section_name)}:\s*\n{{0,2}}(.*?)(?=\n{{0,2}}[a-z_]+(?: [a-z_]+)*:\s*\n|\Z)', re.DOTALL | re.IGNORECASE
-    )
-    cleaned_text = re.sub(pattern, '', text)
-
-    return cleaned_text
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the data.')
-    parser.add_argument('--discharges_path', type=str, help='Path to the discharges file.')
-    parser.add_argument('--discharges_target_path', type=str, help='Path to the discharges target file.')
+    parser.add_argument('--discharge_path', type=str, help='Path to the discharge file.')
+    parser.add_argument('--discharge_target_path', type=str, help='Path to the discharge target file.')
     parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.')
-    parser.add_argument('--short_sequences', type= bool, default=False, help='Whether to keep only short sequences. (<2K tokens)') 
+    parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default=None)
     parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
     parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
 
@@ -243,8 +262,8 @@ if __name__ == "__main__":
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
 
-    discharges_df = load_data(args.discharges_path)
-    discharges_target_df = load_data(args.discharges_target_path)
+    discharges_df = load_data(args.discharge_path)
+    discharges_target_df = load_data(args.discharge_target_path)
 
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
 
@@ -271,7 +290,7 @@ if __name__ == "__main__":
         ])
 
         clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = original_bhc_input
+        in_out['input'] = clean_bhc_input
         in_out['output'] = combined_discharges['brief_hospital_course']
     
     elif args.mode == 'DI':
@@ -289,16 +308,16 @@ if __name__ == "__main__":
 
 
         clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
-        in_out['input'] = original_di_input
+        in_out['input'] = clean_di_input
         in_out['output'] = combined_discharges['discharge_instructions']
     
     
-    if args.short_sequences:
+    if args.max_tokens:
         in_out['token_count'] = in_out['input'].progress_apply(get_token_count)
-        in_out = in_out[in_out['token_count'] < 1950]
+        in_out = in_out[in_out['token_count'] < args.max_tokens]
         in_out.drop(columns=['token_count'], inplace=True)
     
-    in_out['idx'] = in_out.index
+    in_out['idx'] = combined_discharges['hadm_id']
 
     save_data(in_out, args.output_path)
 

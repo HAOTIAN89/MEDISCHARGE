@@ -40,9 +40,6 @@ def calculate_scores(df, metrics, batch_size=128):
     if "meteor" in metrics:
         meteorScorer = evaluate.load("meteor")
         print("meteorScorer initialized")
-    if "perplexity" in metrics:
-        perplexityScorer = Perplexity()
-        print("perplexityScorer initialized")
         
     pbar = tqdm(total=df.shape[0], desc="Processing samples")
 
