@@ -329,7 +329,7 @@ if __name__ == "__main__":
             generated_bhc = load_data(args.generated_bhc_path)
             
             # match by idx and add the generated bhc to the in_out dataframe
-            in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: x + 'brief hospital course: \n' + generated_bhc[generated_bhc['idx'] == x['idx']]['generated_bhc'].values[0] + '\n')
+            in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: x + 'brief hospital course: \n' + generated_bhc[generated_bhc['idx'] == x['idx']]['generated'].values[0] + '\n')
         
         # Else add the original BHC to the prompt
         else: 
