@@ -127,7 +127,7 @@ if __name__ == '__main__':
                         help='The cutting length of the input')
     parser.add_argument('--bhc_max_length',
                         type=int,
-                        default=2048,
+                        default=1400,
                         help='The maximum length of the BHC input')
 
     args = parser.parse_args()
