@@ -8,9 +8,9 @@
 
 absl-py==2.1.0
     # via tensorboard
-accelerate==0.28.0
+accelerate==0.29.2
     # via peft
-aiohttp==3.9.3
+aiohttp==3.9.4
     # via
     #   datasets
     #   fsspec
@@ -26,6 +26,7 @@ anyio==4.3.0
     # via
     #   httpx
     #   jupyter-server
+    #   openai
     #   starlette
     #   watchfiles
 appdirs==1.4.4
@@ -88,6 +89,8 @@ cloudpickle==3.0.0
     # via
     #   dask
     #   outlines
+cmake==3.29.2
+    # via vllm
 coloredlogs==15.0.1
     # via optimum
 comm==0.2.2
@@ -98,10 +101,8 @@ confection==0.1.4
     # via
     #   thinc
     #   weasel
-contourpy==1.2.0
+contourpy==1.2.1
     # via matplotlib
-cupy-cuda12x==12.1.0
-    # via vllm
 cycler==0.12.1
     # via matplotlib
 cymem==2.0.8
@@ -109,7 +110,7 @@ cymem==2.0.8
     #   preshed
     #   spacy
     #   thinc
-dask==2024.3.1
+dask==2024.4.1
     # via -r requirements.in
 dataclasses-json==0.6.4
     # via
@@ -135,6 +136,8 @@ diskcache==5.6.3
     # via outlines
 distlib==0.3.8
     # via virtualenv
+distro==1.9.0
+    # via openai
 docker-pycreds==0.4.0
     # via wandb
 evaluate==0.4.1
@@ -145,13 +148,11 @@ exceptiongroup==1.2.0
     #   ipython
 executing==2.0.1
     # via stack-data
-fastapi==0.110.0
+fastapi==0.110.1
     # via vllm
 fastjsonschema==2.19.1
     # via nbformat
-fastrlock==0.8.2
-    # via cupy-cuda12x
-filelock==3.13.3
+filelock==3.13.4
     # via
     #   datasets
     #   huggingface-hub
@@ -160,7 +161,7 @@ filelock==3.13.3
     #   transformers
     #   triton
     #   virtualenv
-fonttools==4.50.0
+fonttools==4.51.0
     # via matplotlib
 fqdn==1.5.1
     # via jsonschema
@@ -178,7 +179,7 @@ fsspec[http]==2024.2.0
     #   torch
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.42
+gitpython==3.1.43
     # via wandb
 greenlet==3.0.3
     # via sqlalchemy
@@ -193,7 +194,9 @@ httpcore==1.0.5
 httptools==0.6.1
     # via uvicorn
 httpx==0.27.0
-    # via jupyterlab
+    # via
+    #   jupyterlab
+    #   openai
 huggingface-hub==0.22.2
     # via
     #   accelerate
@@ -208,7 +211,7 @@ humanfriendly==10.0
     # via coloredlogs
 identify==2.5.35
     # via pre-commit
-idna==3.6
+idna==3.7
     # via
     #   anyio
     #   httpx
@@ -226,7 +229,7 @@ ipykernel==6.29.4
     #   jupyter-console
     #   jupyterlab
     #   qtconsole
-ipython==8.22.2
+ipython==8.23.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -246,12 +249,12 @@ jinja2==3.1.3
     #   outlines
     #   spacy
     #   torch
-joblib==1.3.2
+joblib==1.4.0
     # via
     #   nltk
     #   outlines
     #   scikit-learn
-json5==0.9.24
+json5==0.9.25
     # via jupyterlab-server
 jsonpatch==1.33
     # via
@@ -294,9 +297,9 @@ jupyter-core==5.7.2
     #   qtconsole
 jupyter-events==0.10.0
     # via jupyter-server
-jupyter-lsp==2.2.4
+jupyter-lsp==2.2.5
     # via jupyterlab
-jupyter-server==2.13.0
+jupyter-server==2.14.0
     # via
     #   jupyter-lsp
     #   jupyterlab
@@ -305,11 +308,11 @@ jupyter-server==2.13.0
     #   notebook-shim
 jupyter-server-terminals==0.5.3
     # via jupyter-server
-jupyterlab==4.1.5
+jupyterlab==4.1.6
     # via notebook
 jupyterlab-pygments==0.3.0
     # via nbconvert
-jupyterlab-server==2.25.4
+jupyterlab-server==2.26.0
     # via
     #   jupyterlab
     #   notebook
@@ -317,11 +320,11 @@ jupyterlab-widgets==3.0.10
     # via ipywidgets
 kiwisolver==1.4.5
     # via matplotlib
-langchain==0.1.13
+langchain==0.1.16
     # via -r requirements.in
-langchain-community==0.0.29
+langchain-community==0.0.32
     # via langchain
-langchain-core==0.1.36
+langchain-core==0.1.42
     # via
     #   langchain
     #   langchain-community
@@ -330,7 +333,7 @@ langchain-text-splitters==0.0.1
     # via langchain
 langcodes==3.3.0
     # via spacy
-langsmith==0.1.37
+langsmith==0.1.47
     # via
     #   langchain
     #   langchain-community
@@ -352,7 +355,7 @@ markupsafe==2.1.5
     #   werkzeug
 marshmallow==3.21.1
     # via dataclasses-json
-matplotlib==3.8.3
+matplotlib==3.8.4
     # via
     #   -r requirements.in
     #   seaborn
@@ -387,7 +390,7 @@ nbconvert==7.16.3
     # via
     #   jupyter
     #   jupyter-server
-nbformat==5.10.3
+nbformat==5.10.4
     # via
     #   jupyter-server
     #   nbclient
@@ -396,7 +399,7 @@ nest-asyncio==1.6.0
     # via
     #   ipykernel
     #   outlines
-networkx==3.2.1
+networkx==3.3
     # via torch
 ninja==1.11.1.1
     # via vllm
@@ -417,7 +420,6 @@ numpy==1.26.4
     #   accelerate
     #   blis
     #   contourpy
-    #   cupy-cuda12x
     #   datasets
     #   evaluate
     #   langchain
@@ -466,17 +468,19 @@ nvidia-cusparse-cu12==12.1.0.106
     #   torch
 nvidia-nccl-cu12==2.18.1
     # via torch
-nvidia-nvjitlink-cu12==12.4.99
+nvidia-nvjitlink-cu12==12.4.127
     # via
     #   nvidia-cusolver-cu12
     #   nvidia-cusparse-cu12
 nvidia-nvtx-cu12==12.1.105
     # via torch
-optimum==1.18.0
+openai==1.17.1
+    # via -r requirements.in
+optimum==1.18.1
     # via -r requirements.in
 orjson==3.10.0
     # via langsmith
-outlines==0.0.37
+outlines==0.0.34
     # via vllm
 overrides==7.7.0
     # via jupyter-server
@@ -506,7 +510,7 @@ packaging==23.2
     #   torchmetrics
     #   transformers
     #   weasel
-pandas==2.2.1
+pandas==2.2.2
     # via
     #   -r requirements.in
     #   datasets
@@ -514,7 +518,7 @@ pandas==2.2.1
     #   seaborn
 pandocfilters==1.5.1
     # via nbconvert
-parso==0.8.3
+parso==0.8.4
     # via jedi
 partd==1.4.1
     # via dask
@@ -522,7 +526,7 @@ peft==0.10.0
     # via -r requirements.in
 pexpect==4.9.0
     # via ipython
-pillow==10.2.0
+pillow==10.3.0
     # via
     #   matplotlib
     #   sentence-transformers
@@ -563,25 +567,28 @@ ptyprocess==0.7.0
     #   terminado
 pure-eval==0.2.2
     # via stack-data
+py-cpuinfo==9.0.0
+    # via vllm
 pyarrow==15.0.2
     # via datasets
 pyarrow-hotfix==0.6
     # via datasets
-pycparser==2.21
+pycparser==2.22
     # via cffi
-pydantic==2.6.4
+pydantic==2.7.0
     # via
     #   confection
     #   fastapi
     #   langchain
     #   langchain-core
     #   langsmith
+    #   openai
     #   outlines
     #   spacy
     #   thinc
     #   vllm
     #   weasel
-pydantic-core==2.16.3
+pydantic-core==2.18.1
     # via pydantic
 pygments==2.17.2
     # via
@@ -643,6 +650,7 @@ referencing==0.34.0
 regex==2023.12.25
     # via
     #   nltk
+    #   tiktoken
     #   transformers
 requests==2.31.0
     # via
@@ -652,15 +660,16 @@ requests==2.31.0
     #   jupyterlab-server
     #   langchain
     #   langchain-community
-    #   langchain-core
     #   langsmith
     #   outlines
     #   ray
     #   responses
     #   spacy
+    #   tiktoken
     #   torchdata
     #   torchtext
     #   transformers
+    #   vllm
     #   wandb
     #   weasel
 responses==0.18.0
@@ -682,11 +691,11 @@ safetensors==0.4.2
     #   accelerate
     #   peft
     #   transformers
-scikit-learn==1.4.1.post1
+scikit-learn==1.4.2
     # via
     #   -r requirements.in
     #   sentence-transformers
-scipy==1.12.0
+scipy==1.13.0
     # via
     #   -r requirements.in
     #   outlines
@@ -694,7 +703,7 @@ scipy==1.12.0
     #   sentence-transformers
 seaborn==0.13.2
     # via -r requirements.in
-send2trash==1.8.2
+send2trash==1.8.3
     # via jupyter-server
 sentence-transformers==2.6.1
     # via -r requirements.in
@@ -702,7 +711,7 @@ sentencepiece==0.2.0
     # via
     #   transformers
     #   vllm
-sentry-sdk==1.44.0
+sentry-sdk==1.45.0
     # via wandb
 setproctitle==1.3.3
     # via wandb
@@ -724,6 +733,7 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
+    #   openai
 soupsieve==2.5
     # via beautifulsoup4
 spacy==3.7.4
@@ -744,7 +754,7 @@ srsly==2.4.8
     #   weasel
 stack-data==0.6.3
     # via ipython
-starlette==0.36.3
+starlette==0.37.2
     # via fastapi
 sympy==1.12
     # via
@@ -767,6 +777,10 @@ thinc==8.2.3
     # via spacy
 threadpoolctl==3.4.0
     # via scikit-learn
+tiktoken==0.6.0
+    # via
+    #   -r requirements.in
+    #   vllm
 tinycss2==1.2.1
     # via nbconvert
 tokenizers==0.15.2
@@ -810,6 +824,7 @@ tqdm==4.66.2
     #   evaluate
     #   huggingface-hub
     #   nltk
+    #   openai
     #   peft
     #   sentence-transformers
     #   spacy
@@ -832,7 +847,7 @@ traitlets==5.14.2
     #   nbconvert
     #   nbformat
     #   qtconsole
-transformers[sentencepiece]==4.39.2
+transformers[sentencepiece]==4.39.3
     # via
     #   -r requirements.in
     #   optimum
@@ -850,14 +865,16 @@ typer==0.9.4
     #   weasel
 types-python-dateutil==2.9.0.20240316
     # via arrow
-typing-extensions==4.10.0
+typing-extensions==4.11.0
     # via
     #   anyio
     #   async-lru
     #   cloudpathlib
     #   fastapi
     #   huggingface-hub
+    #   ipython
     #   lightning-utilities
+    #   openai
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
@@ -883,9 +900,9 @@ uvloop==0.19.0
     # via uvicorn
 virtualenv==20.25.1
     # via pre-commit
-vllm==0.3.3
+vllm==0.4.0.post1
     # via -r requirements.in
-wandb==0.16.5
+wandb==0.16.6
     # via -r requirements.in
 wasabi==1.1.2
     # via
@@ -908,7 +925,7 @@ websocket-client==1.7.0
     # via jupyter-server
 websockets==12.0
     # via uvicorn
-werkzeug==3.0.1
+werkzeug==3.0.2
     # via tensorboard
 widgetsnbextension==4.0.10
     # via ipywidgets
