@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 from utils.preprocessing import load_data
 
-test_targets_path = '../../data/test_phase_1/discharge_target.csv.gz'
+test_targets_path = '../../data/test_phase_2/discharge_target.csv.gz'
 
 def combine_files(bhc_path, di_path, output_path):
     # Load the CSV files

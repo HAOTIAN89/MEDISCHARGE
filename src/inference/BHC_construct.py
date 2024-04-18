@@ -114,11 +114,11 @@ if __name__ == '__main__':
                         help='The strategy to select the sections in BHC dataset')
     parser.add_argument('--discharge_dataset', 
                         type=str, 
-                        default="/home/haotian/make-discharge-me/data/test_phase_1/discharge.csv.gz",
+                        default="/home/haotian/make-discharge-me/data/test_phase_2/discharge.csv.gz",
                         help='Path to the discharge.csv.gz')
     parser.add_argument('--target_dataset', 
                         type=str, 
-                        default="/home/haotian/make-discharge-me/data/test_phase_1/discharge_target.csv.gz",
+                        default="/home/haotian/make-discharge-me/data/test_phase_2/discharge_target.csv.gz",
                         help='Path to the discharge_target.csv.gz')
     parser.add_argument('--max_length',
                         type=int,
