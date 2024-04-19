@@ -101,40 +101,55 @@ def extract_family_history(text):
     return family_history_text
 
 def extract_physical_exam(text):
-    physical_exam = re.findall(r'Physical Exam:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    physical_exam = re.findall(r'Physical Exam:\s*\n{0,2}(.*?)Pertinent Results:', text, re.DOTALL)
     physical_exam_text = "\n\nPhysical Exam: \n" + ''.join(physical_exam)
     return physical_exam_text
 
 def extract_pertinent_results(text):
-    pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
     pertinent_results_text = "\n\nPertinent Results: \n" + ''.join(pertinent_results)
     return pertinent_results_text
 
 
 def extract_medication_on_admission(text):
-    medications_on_admission = re.findall(r'Medications on Admission:\n(.*?)Discharge Medications', text, re.DOTALL)
-    medications_on_admission_text = "Medications on Admission: \n" + ''.join(medications_on_admission)
-    return medications_on_admission_text
+    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ on Admission', '[A-Za-z_]+ Medications')
+    section_ext = re.findall(rex, text, re.DOTALL)
+    if len(section_ext) > 0:
+        return "Medications on Admission: \n" + ''.join(section_ext[-1][1]) + '\n'
+    else:
+        return " "
 
 def extract_discharge_medications(text):
-    discharge_medications = re.findall(r'Discharge Medications:\n(.*?)Discharge Disposition:', text, re.DOTALL)
-    discharge_medications_text = "Discharge Medications: \n" + ''.join(discharge_medications)
-    return discharge_medications_text
+    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Medications', '[A-Za-z_]+ Disposition')
+    section_ext = re.findall(rex, text, re.DOTALL)
+    if len(section_ext) > 0:
+        return "Discharge Medications: \n" + ''.join(section_ext[-1][1]) + '\n'
+    else:
+        return " "
 
 def extract_discharge_disposition(text):
-    discharge_disposition = re.findall(r'Discharge Disposition:\n(.*?)Discharge Diagnosis:', text, re.DOTALL)
-    discharge_disposition_text = "Discharge Disposition: \n" + ''.join(discharge_disposition)
-    return discharge_disposition_text
+    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Disposition', '[A-Za-z_]+ Diagnosis')
+    section_ext = re.findall(rex, text, re.DOTALL)
+    if len(section_ext) > 0:
+        return "Discharge Disposition: \n" + ''.join(section_ext[-1][1]) + '\n'
+    else:
+        return " "
 
 def extract_discharge_diagnosis(text):
-    discharge_diagnosis = re.findall(r'Discharge Diagnosis:\n(.*?)Discharge Condition:', text, re.DOTALL)
-    discharge_diagnosis_text = "Discharge Diagnosis: \n" + ''.join(discharge_diagnosis)
-    return discharge_diagnosis_text
+    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Diagnosis', '[A-Za-z_]+ Condition')
+    section_ext = re.findall(rex, text, re.DOTALL)
+    if len(section_ext) > 0:
+        return "Discharge Diagnosis: \n" + ''.join(section_ext[-1][1]) + '\n'
+    else:
+        return " "
 
 def extract_discharge_condition(text):
-    discharge_condition = re.findall(r'Discharge Condition:\n(.*?)Discharge Instructions:', text, re.DOTALL)
-    discharge_condition_text = "Discharge Condition: \n" + ''.join(discharge_condition)
-    return discharge_condition_text
+    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Condition', '[A-Za-z_]+ Instructions')
+    section_ext = re.findall(rex, text, re.DOTALL)
+    if len(section_ext) > 0:
+        return "Discharge Condition: \n" + ''.join(section_ext[-1][1]) + '\n'
+    else:
+        return " "
 
 feature_to_header = {
     'sex': 'Sex',
