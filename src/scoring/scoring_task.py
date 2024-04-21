@@ -46,13 +46,13 @@ def calculate_scores(df, metrics, batch_size=128):
     def calculate_scores(df):
         if "bleu" in metrics:
             temp = bleuScorer(
-                refs=df["gold"].tolist(),
+                refs=df["reference"].tolist(),
                 hyps=df["generated"].tolist(),
             )
             scores["bleu"].extend(temp)
         if "rouge" in metrics:
             temp = rougeScorer(
-                refs=df["gold"].tolist(),
+                refs=df["reference"].tolist(),
                 hyps=df["generated"].tolist(),
             )
             scores["rouge"][0].extend(
@@ -66,13 +66,13 @@ def calculate_scores(df, metrics, batch_size=128):
             )
         if "bertscore" in metrics:
             temp = bertScorer(
-                refs=df["gold"].tolist(),
+                refs=df["reference"].tolist(),
                 hyps=df["generated"].tolist(),
             )
             scores["bertscore"].extend(temp)
         if "meteor" in metrics:
             temp = meteorScorer.compute(
-                references=df["gold"].tolist(),
+                references=df["reference"].tolist(),
                 predictions=df["generated"].tolist(),
             )
             scores["meteor"].append(temp["meteor"])
@@ -157,6 +157,14 @@ if __name__ == "__main__":
     input_dir = args.input_dir
     score_dir = args.score_dir
     
+    # if the output directory does not exist, create it (root directory is ../../) from this file
+    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    output_dir = os.path.join(root_dir, score_dir)
+    print(f"Output directory: {output_dir}")
+    if not os.path.exists(output_dir):
+        print(f"Creating output directory at {output_dir}")
+        os.makedirs(output_dir, exist_ok=True)
+    
     input_metrics = args.metrics
     print(input_metrics)
     for metric in input_metrics:
@@ -174,11 +182,11 @@ if __name__ == "__main__":
     )
 
     # covert all elements to string
-    df["gold"] = df["gold"].astype(str)
+    df["reference"] = df["reference"].astype(str)
     df["generated"] = df["generated"].astype(str)
 
     # convert to single-line strings by removing newline characters
-    df["gold"] = df["gold"].str.replace(
+    df["reference"] = df["reference"].str.replace(
         "\n", " "
     )
     df["generated"] = df["generated"].str.replace(
@@ -198,12 +206,6 @@ if __name__ == "__main__":
     )
 
     leaderboard = compute_overall_score(scores)
-    
-    # if the output directory does not exist, create it (root directory is ../../) from this file
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    output_dir = os.path.join(current_dir, score_dir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
     
 
     with open(os.path.join(output_dir, "scores.json"), "w") as score_file:

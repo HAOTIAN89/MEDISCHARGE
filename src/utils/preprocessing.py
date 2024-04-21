@@ -31,7 +31,16 @@ def load_data(file_path: str, type='gzip') -> pd.DataFrame:
 
 def save_data(data: pd.DataFrame, file_path: str):
     """Saves the data to the file_path."""
-    data.to_csv(file_path, index=False,compression='gzip')
+    if file_path.endswith('.csv'):
+        data.to_csv(file_path, index=False)
+    elif file_path.endswith('.json'):
+        data.to_json(file_path, orient='records')
+    elif file_path.endswith('.jsonl'):
+        data.to_json(file_path, orient='records', lines=True)
+    elif file_path.endswith('.gzip'):
+        data.to_csv(file_path, index=False,compression='gzip')
+    else:
+        raise ValueError(f"File type not supported. Supported types: csv, json, jsonl, gzip")
 
 
 def build_combined_discharge(discharges: pd.DataFrame, discharges_target: pd.DataFrame) -> pd.DataFrame:
@@ -408,6 +417,15 @@ if __name__ == "__main__":
     
     features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
 
+    # if the output directory does not exist, create it (root directory is ../../) from this file
+    root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+    output_path = os.path.join(root_dir, args.output_path)
+    output_dir = os.path.dirname(output_path)
+    print(f"Output directory: {output_dir}")
+    if not os.path.exists(output_dir):
+        print(f"Creating output directory at {output_dir}")
+        os.makedirs(output_dir, exist_ok=True)
+
     if args.mode == 'BHC':
         original_bhc_input = get_bhc_input(combined_discharges)
         features_to_include = [
@@ -477,5 +495,5 @@ if __name__ == "__main__":
     print(f'Number of rows: {len(in_out)}')
     print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
 
-    save_data(in_out, args.output_path)
+    save_data(in_out, output_path)
 

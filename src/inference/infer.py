@@ -41,10 +41,24 @@ GREEDY_PARAMETERS = {
     'max_tokens': 2048
 }
 
+EXTENDED_PARAMETERS = {
+    'best_of': 1,
+    'presence_penalty': 0.0,
+    'frequency_penalty': 0.0,
+    'top_k': -1,
+    'top_p': 1.0,
+    'temperature': 0.0,
+    'stop': EOS_TOKEN,
+    'use_beam_search': False,
+    'max_tokens': 6144
+}
+
 PARAMETERS = {
     'meditron-7b': GREEDY_PARAMETERS,
     'medischarge-7b-BHC': GREEDY_PARAMETERS,
-    'medischarge-7b-DI': GREEDY_PARAMETERS
+    'medischarge-7b-DI': GREEDY_PARAMETERS,
+    'medischarge-7b-BHC-extended': EXTENDED_PARAMETERS,
+    'medischarge-7b-DI-extended': EXTENDED_PARAMETERS,
 }
 
 # ----------------------- Inference utilities ----------------------- #
