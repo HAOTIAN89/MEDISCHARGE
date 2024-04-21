@@ -273,6 +273,114 @@ def remove_unecessary_tokens(text):
     return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
 
 
+bhc_strategy = [
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness'],
+    ['sex', 'allergies', 'chief_complaint', 'history_of_present_illness'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'allergies', 'chief_complaint', 'physical_exam'],
+    ['sex', 'allergies', 'chief_complaint', 'pertinent_results'],
+    ['sex', 'allergies', 'chief_complaint', 'past_medical_history'],
+]
+
+di_strategy = [["medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"], 
+            ["discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
+            ["medication_on_admission", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
+            ["discharge_medications", "brief_hospital_course"],
+            ["discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
+            ["discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
+            ['discharge_condition', "brief_hospital_course"],
+            ['discharge_diagnosis', "brief_hospital_course"],
+            ['medication_on_admission', "brief_hospital_course"],
+            ['discharge_disposition', "brief_hospital_course"],
+            ["brief_hospital_course"]
+            ]
+
+def count_tokens_per_section(df, sections):
+    """
+    Counts the number of tokens in each section of the text.
+    
+    Args:
+        text (str): input text
+        sections (list): list of sections to count tokens
+    
+    Returns:
+        (dict) dictionary with the number of tokens per section
+    """
+    
+    for section in sections:
+        df[section] = extract_clean_inputs(df, features_to_include=[section]) \
+            .progress_apply(remove_unecessary_tokens)
+        
+        df[section + '_tokens'] = df[section].progress_apply(get_token_count)
+            
+    return df
+
+def select_strategy(df, mode, max_length=1548):
+    """
+    Selects the strategy for the preprocessing based on the mode.
+    
+    Args:
+        df (pd.DataFrame): dataframe with the text
+        mode (str): mode to preprocess the data
+    
+    Returns:
+        (list) list of features to include in the preprocessing
+    """
+    
+    if mode == 'BHC':
+        strategies = bhc_strategy
+    elif mode == 'DI':
+        strategies = di_strategy
+    else:
+        raise ValueError("Mode must be either 'BHC' or 'DI'.")
+    
+    outputs = []
+    too_long = 0
+    for index, row in df.iterrows():
+        total_tokens = 0
+        for select in strategies:
+            total_tokens = 0
+            for section in select:
+                total_tokens += row[section + "_tokens"]
+            if total_tokens < max_length: 
+                final_select = select
+                break
+            if select == strategies[-1]:
+                final_select = strategies[-1]
+                print("no suitable strategy found")
+        
+        if final_select == strategies[-1] and total_tokens >= max_length:
+            output = '\n'.join([
+                row[section] for section in final_select if section in row
+            ])[0:max_length]
+            too_long += 1
+        else:
+            output = '\n'.join([
+                row[section] for section in final_select if section in row
+            ])
+        outputs.append(output)
+        
+    print(f'Number of rows that exceed the maximum length: {too_long}/{len(df)}')
+    return outputs
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the data.')
     parser.add_argument('--discharge_path', type=str, help='Path to the discharge file.')
@@ -314,9 +422,12 @@ if __name__ == "__main__":
                 'pertinent_results',
                 'physical_exam',
             ]
-        processed_bhc_input = extract_clean_inputs(combined_discharges, features_to_include = [
+        combined_discharges = count_tokens_per_section(combined_discharges, sections= [
             feature for feature in features_to_include if feature not in features_to_exclude
         ])
+        
+        processed_bhc_input = select_strategy(combined_discharges, mode='BHC', max_length=args.max_tokens)
+        processed_bhc_input = pd.Series(processed_bhc_input)
 
         clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
         in_out['prompt'] = clean_bhc_input
@@ -331,25 +442,28 @@ if __name__ == "__main__":
                 'discharge_diagnosis',
                 'discharge_condition',
             ]
-        processed_di_input = extract_clean_inputs(combined_discharges, features_to_include = [
+        
+        if args.generated_bhc_path:
+            generated_bhc = load_data(args.generated_bhc_path)
+            
+            combined_discharges['brief_hospital_course'] = 'brief hospital course: \n' + generated_bhc['generated'] + '\n'
+        else:
+            combined_discharges['brief_hospital_course'] = 'brief hospital course: \n' + combined_discharges['brief_hospital_course'] + '\n'
+            
+        combined_discharges['brief_hospital_course'] = combined_discharges['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
+        combined_discharges['brief_hospital_course_tokens'] = combined_discharges['brief_hospital_course'].progress_apply(get_token_count)
+        
+        combined_discharges = count_tokens_per_section(combined_discharges, sections=[
             feature for feature in features_to_include if feature not in features_to_exclude
         ])
+            
+        processed_di_input = select_strategy(combined_discharges, mode='DI', max_length=args.max_tokens)
+        processed_di_input = pd.Series(processed_di_input)
 
         clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
         in_out['prompt'] = clean_di_input
         in_out['reference'] = combined_discharges['discharge_instructions']
     
-        # Add the generated BHC to the input prompt
-        if args.generated_bhc_path:
-            generated_bhc = load_data(args.generated_bhc_path)
-            
-            # match by idx and add the generated bhc to the in_out dataframe
-            in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: x + 'brief hospital course: \n' + generated_bhc[generated_bhc['idx'] == x['idx']]['generated'].values[0] + '\n')
-        
-        # Else add the original BHC to the prompt
-        else: 
-            in_out['prompt'] = in_out['prompt'] + 'brief hospital course: \n' + combined_discharges['brief_hospital_course'] + '\n'
-        
     if args.prompt_path:
         try:
             prompt = load_data(args.prompt_path, type='json')            
@@ -359,11 +473,9 @@ if __name__ == "__main__":
         assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
         
         in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
-        
-    if args.max_tokens:
-        in_out['token_count'] = in_out['prompt'].progress_apply(get_token_count)
-        in_out = in_out[in_out['token_count'] < args.max_tokens]
-        in_out.drop(columns=['token_count'], inplace=True)
+   
+    print(f'Number of rows: {len(in_out)}')
+    print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
 
     save_data(in_out, args.output_path)
 

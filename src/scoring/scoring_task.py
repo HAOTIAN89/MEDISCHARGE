@@ -199,8 +199,12 @@ if __name__ == "__main__":
 
     leaderboard = compute_overall_score(scores)
     
-    if not os.path.exists(score_dir):
-        os.makedirs(score_dir)
+    # if the output directory does not exist, create it (root directory is ../../) from this file
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    output_dir = os.path.join(current_dir, score_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    
 
-    with open(os.path.join(score_dir, "scores.json"), "w") as score_file:
+    with open(os.path.join(output_dir, "scores.json"), "w") as score_file:
         score_file.write(json.dumps(leaderboard))
