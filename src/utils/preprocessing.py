@@ -29,9 +29,20 @@ def load_data(file_path: str, type='gzip') -> pd.DataFrame:
  
     raise ValueError(f"Type {type} not supported.")
 
-def save_data(data: pd.DataFrame, file_path: str):
-    """Saves the data to the file_path."""
-    data.to_csv(file_path, index=False,compression='gzip')
+def save_data(data: pd.DataFrame, file_path: str,  mode='w'):
+    '''
+    Given a dataframe, save it to a .csv or .json or .jsonl file.
+    '''
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    if '.csv' in file_path:
+        data.to_csv(path, index=False, mode=mode)
+    elif '.jsonl' in file_path:
+        data.to_json(file_path, orient='records', lines=True, mode=mode)
+    elif '.json' in file_path:
+        data.to_json(file_path, orient='records', mode=mode)
+    else: 
+        raise ValueError(f"Provided path {file_path} is not a .csv, .json or .jsonl file.")
+    
 
 
 def build_combined_discharge(discharges: pd.DataFrame, discharges_target: pd.DataFrame) -> pd.DataFrame:
