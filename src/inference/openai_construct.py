@@ -194,9 +194,9 @@ if __name__ == '__main__':
             test_discharges['examples_string'] = test_discharges.progress_apply(lambda x: concat_n_examples(x['clean_discharge_examples'], x['output_examples']), axis=1)
 
             # construct the n-shot prompt
-            test_discharges['user_prompt'] = test_discharges[['clean_discharge','examples_string']].progress_apply(axis = 1, func = lambda x: construct_n_shot_prompt(prompt, x['clean_discharge'], n_shots, x['examples_string']))
+            test_discharges['prompt'] = test_discharges[['clean_discharge','examples_string']].progress_apply(axis = 1, func = lambda x: construct_n_shot_prompt(prompt, x['clean_discharge'], n_shots, x['examples_string']))
             
-            final_df = test_discharges[['user_prompt', output_key]].copy()
+            final_df = test_discharges[['prompt', output_key]].copy()
             final_df['idx'] = final_df.index
             final_df.rename(columns={output_key: 'gold'}, inplace=True)
 

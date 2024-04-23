@@ -10,10 +10,11 @@ import asyncio
 import nest_asyncio
 import pandas as pd
 from src.utils.loading_saving import load_file, save_file
+tqdm.pandas()
 
 #from utils.prompts import advice_prompt, student_prompt, rec_prompt, rec_prompt_fast
 
-KEY_PATH = '../src/inference/keys.json'
+KEY_PATH = 'src/inference/keys.json'
 # MODEL = 'gpt-4-0125-preview'
 MODEL = 'gpt-3.5-turbo-0125'
 
@@ -34,7 +35,8 @@ class GPTWrapper():
         self.stop = None
         self.key_path = key_path
         self.client = self.login_openai()
-        self.cost_per_k_tokens = 1
+        self.cost_per_input_token = 10 / 1e6
+        self.cost_per_output_token = 30 / 1e6
     
     def format_response(self, response):
         ''' Format response from OpenAI API. '''
@@ -86,29 +88,39 @@ class GPTWrapper():
                 json.dump(existing, f, indent=4)
         else:
             raise ValueError('File must be json or jsonl.')
-
-    def count_tokens(self, messages):
+    
+    def count_text_tokens(self, text):
         ''' Count number of tokens in text. '''
-        tokens_per_message = 3
-        tokens_per_name = 1
         try: 
             encoding = tiktoken.encoding_for_model(self.model)
         except KeyError:
             encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+    
+    def count_message_tokens(self, messages):
+        ''' Count number of tokens in text. '''
+        tokens_per_message = 3
+        tokens_per_name = 1
         num_tokens = 0
         for message in messages:
             num_tokens += tokens_per_message
             for key, value in message.items():
-                num_tokens += len(encoding.encode(value))
+                num_tokens += self.count_text_tokens(value)
                 if key == "name":
                     num_tokens += tokens_per_name
-        num_tokens += 3
+            num_tokens += 3
         return num_tokens
-    
-    def estimate_cost(self, nb_tokens):
+
+    def estimate_input_cost(self, nb_tokens):
         ''' Estimate cost of text generation. 
         '''
-        return (nb_tokens * self.cost_per_k_tokens) / 1000
+        return (nb_tokens * self.cost_per_input_token)
+    
+    def estimate_output_cost(self, nb_tokens):
+
+        ''' Estimate cost of text generation. 
+        '''
+        return (nb_tokens * self.cost_per_output_token)
     
     def new_batch(self, idx ,msg, msg_len):
         ''' Create a new batch. '''
@@ -126,7 +138,7 @@ class GPTWrapper():
         batches = []
         for _,idx,message in tqdm(all_messages.itertuples(), total=len(all_messages), desc="Partitioning messages"):
             nb_batches = len(batches)
-            msg_len = self.count_tokens(message)
+            msg_len = self.count_messages_tokens(message)
 
             if nb_batches == 0:
                 batches.append(self.new_batch(idx, message, msg_len)) 
@@ -264,6 +276,19 @@ class GPTWrapper():
         
         return answers
             
+
+    def estimate_all_cost(self, user_prompts, sys_prompt=None):
+        ''' Estimate cost of generating answers for all user prompts. '''
+        all_messages = user_prompts['prompt'].progress_apply(lambda x: self.build_messages(x, sys_prompt))
+        input_tokens_counts = all_messages.progress_apply(self.count_message_tokens)
+        input_tokens_count = input_tokens_counts.sum()
+
+        output_tokens_counts = user_prompts['gold'].progress_apply(self.count_text_tokens)
+        output_tokens_count = output_tokens_counts.sum()
+
+        return {'input_token_count': input_tokens_count, 'input_token_cost': self.estimate_input_cost(input_tokens_count),
+                'output_token_count': output_tokens_count, 'output_token_cost': self.estimate_output_cost(output_tokens_count)}
+        
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
