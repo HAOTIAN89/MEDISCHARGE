@@ -9,7 +9,7 @@ VENV_PATH:=$(PWD)/../.venv
 REQ_IN:=requirements.in
 REQ_TXT:=requirements.txt
 
-TORCH_GPU_WHL_LINK:="https://download.pytorch.org/whl/cu121"
+CUDA121_WHEELS:="https://download.pytorch.org/whl/cu121"
 
 #########################
 # FILES
@@ -21,7 +21,7 @@ TORCH_GPU_WHL_LINK:="https://download.pytorch.org/whl/cu121"
 # Run this if $(REQ_IN) has been updated.
 requirements.txt: $(REQ_IN)
 	rm -f $(REQ_TXT)
-	pip-compile --output-file=$(REQ_TXT) --find-links=$(TORCH_GPU_WHL_LINK) $(REQ_IN)
+	pip-compile --output-file=$(REQ_TXT) --find-links=$(CUDA121_WHEELS) $(REQ_IN)
 
 #########################
 # PYTHON ENVIRONMENT
