@@ -17,7 +17,8 @@ from utils.token_count import get_token_count
 
 def load_data(file_path: str, type='gzip') -> pd.DataFrame:
     """Loads the data from the file_path."""
-    
+    #print(f"Loading data from {file_path}")
+    #print(f"the current directory is {os.getcwd()}")
     if type == 'gzip':
         return pd.read_csv(file_path, compression='gzip')
     elif type == 'csv':

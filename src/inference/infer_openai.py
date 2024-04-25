@@ -9,6 +9,12 @@ import tiktoken
 import asyncio
 import nest_asyncio
 import pandas as pd
+import sys
+
+root_path = os.path.abspath(os.path.join(os.curdir, os.pardir, os.pardir))
+os.chdir(root_path)
+sys.path.append(root_path)
+
 from src.utils.loading_saving import load_file, save_file
 tqdm.pandas()
 
@@ -25,7 +31,7 @@ class GPTWrapper():
     def __init__(self, model=MODEL, key_path=KEY_PATH):
 
         self.model = model
-        self.max_tokens_per_batch = 60
+        self.max_tokens_per_batch = 5000000
         self.prompt = None
         self.max_tokens = 2000
         self.temperature = 0.7
@@ -138,7 +144,7 @@ class GPTWrapper():
         batches = []
         for _,idx,message in tqdm(all_messages.itertuples(), total=len(all_messages), desc="Partitioning messages"):
             nb_batches = len(batches)
-            msg_len = self.count_messages_tokens(message)
+            msg_len = self.count_message_tokens(message)
 
             if nb_batches == 0:
                 batches.append(self.new_batch(idx, message, msg_len)) 
@@ -203,13 +209,13 @@ class GPTWrapper():
         try: 
             response = await self.client.chat.completions.create(
                 messages=messages,
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                top_p=self.top_p,
-                frequency_penalty=self.frequency_penalty,
-                presence_penalty=self.presence_penalty,
-                stop=self.stop
+                model=self.model
+                #max_tokens=self.max_tokens,
+                #temperature=self.temperature,
+                #top_p=self.top_p,
+                #frequency_penalty=self.frequency_penalty,
+                #presence_penalty=self.presence_penalty,
+                #stop=self.stop
             )
         except Exception as e:
             print(f'Error during generation: {e}')
@@ -245,7 +251,7 @@ class GPTWrapper():
                 print("All prompts have already been answered.")
                 return answers
         else:
-            answers = pd.DataFrame(columns=["idx", "prompt", "answer"])
+            answers = pd.DataFrame(columns=["idx", "prompt", "answer", "gold"])
         
         #remove whats already done
         done_idx = answers["idx"].tolist()
@@ -258,14 +264,14 @@ class GPTWrapper():
             batch = batch_["batch"]['messages']
             idxs = batch_["batch"]['idx']
             nb_tokens = batch_["total_nb_token"]
-            print(f"Batch {i+1}/{len(batches)}: {batch.shape[0]} calls, {nb_tokens} total tokens, estimated input cost: {self.estimate_cost(nb_tokens)}$")
+            print(f"Batch {i+1}/{len(batches)}: {batch.shape[0]} calls, {nb_tokens} total tokens, estimated input cost: {self.estimate_input_cost(nb_tokens)}$")
             loop = asyncio.get_event_loop()
             nest_asyncio.apply()
             start_time = time.time()
             current_answers = loop.run_until_complete(self.dispatch_openai_requests(batch))
 
             current_answers = pd.DataFrame({'idx': idxs,'answer': current_answers})
-            current_answers = current_answers.merge(user_prompts[['idx', 'prompt']], on='idx', how='left')
+            current_answers = current_answers.merge(user_prompts[['idx', 'prompt', 'gold']], on='idx', how='left')
             answers = pd.concat([answers, current_answers], axis=0)
             save_file(answers, save_path)
 
@@ -297,7 +303,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--output_path', type=str, required=True, help='Path to the output data file.')
     parser.add_argument(
-        '--sys_prompt_path', type=str, default=None, help='Path to the system prompt file.')
+        '--sys_prompt_path', type=str, required=False, default=None, help='Path to the system prompt file.')
 
 
     args = parser.parse_args()
@@ -305,7 +311,7 @@ if __name__ == '__main__':
     #check paths
     if not os.path.exists(args.input_path):
         raise ValueError(f'Input file not found at {args.input_path}.')
-    if not os.path.exists(args.sys_prompt_path):
+    if args.sys_prompt_path is None or not os.path.exists(args.sys_prompt_path):
         sys_prompt = None
     else:
         with open(args.sys_prompt_path, 'r') as f:

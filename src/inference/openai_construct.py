@@ -1,11 +1,9 @@
 import argparse
 import os
 import sys
-
 root_path = os.path.abspath(os.path.join(os.curdir, os.pardir, os.pardir))
 os.chdir(root_path)
 sys.path.append(root_path)
-
 
 from src.utils.preprocessing import (load_data,
                                 save_data,
@@ -143,8 +141,7 @@ if __name__ == '__main__':
     n_shots_list = args.n_shots_list.split(',')
 
   
-    #n_shots = args.n_shots_list.split(',')
-    
+    print(f"the root directory is {os.getcwd()}")
     test_discharges = load_data(args.test_discharge_dataset)
 
     # sample the test_discharges

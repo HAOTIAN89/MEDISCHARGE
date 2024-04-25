@@ -1,9 +1,9 @@
-test_discharge=data/test_phase_1/discharge.csv.gz
-test_target=data/test_phase_1/discharge_target.csv.gz
-train_discharge=data/train/discharge.csv.gz
-train_target=data/train/discharge_target.csv.gz
+test_discharge=data/version1.4_ours/test_phase_2/discharge.csv.gz
+test_target=data/version1.4_ours/test_phase_2/discharge_target.csv.gz
+train_discharge=data/version1.4_ours/train/discharge.csv.gz
+train_target=data/version1.4_ours/train/discharge_target.csv.gz
 modes="bhc,di"
-nb_samples=1000
+nb_samples=250
 n_shots="1,2,3"
 output_folder_path=data/openai_inputs
 prompt_folder_path=src/prompts
