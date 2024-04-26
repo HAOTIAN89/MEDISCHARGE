@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+
 root_path = os.path.abspath(os.path.join(os.curdir, os.pardir, os.pardir))
 os.chdir(root_path)
 sys.path.append(root_path)
@@ -65,7 +66,7 @@ def remove_bhc_di(raw_discharge: str, bhc:str, di:str, mode:str='bhc'):
     return clean_discharge
 
 
-def concat_n_examples(discharges: list, outputs: list):
+def concat_n_examples(discharges: list, outputs: list, mode:str):
     '''
     Concatenate n examples together
     input:
@@ -78,12 +79,10 @@ def concat_n_examples(discharges: list, outputs: list):
     '''
 
     examples_string = ''
-
+    full_mode = 'Brief Hospital Course' if mode == 'bhc' else 'Discharge Instructions'
     for i, (discharge, output) in enumerate(zip(discharges, outputs)):
-        examples_string += f"Example {i+1}:\nHospital Discharge:\n\n{discharge}\n\nExpected Output:\n\n{output}\n\n"
-    
-    examples_string += '\n'
-    
+        examples_string += f"Example {i+1}:\nSTART OF DISCHARGE:\n{discharge}\nEND OF DISCHARGE\n\nSTART OF EXPECTED {full_mode} OUTPUT:\n{output}\nEND OF EXPECTED {full_mode} OUTPUT\n\n"
+        
     return examples_string
 
 def construct_n_shot_prompt(prompt: str, clean_discharge: str, n_shot: int, examples_string: str):
@@ -106,7 +105,7 @@ def construct_n_shot_prompt(prompt: str, clean_discharge: str, n_shot: int, exam
     return n_shot_prompt
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Construct the BHC or DI test set fior open ai Inference.')
+    parser = argparse.ArgumentParser(description='Construct the BHC or DI test set for open ai Inference.')
     parser.add_argument('--Modes',
                         type=str,
                         help='The modes to construct the prompt for in ["bhc","di"]')
@@ -140,8 +139,7 @@ if __name__ == '__main__':
     modes = args.Modes.split(',')
     n_shots_list = args.n_shots_list.split(',')
 
-  
-    print(f"the root directory is {os.getcwd()}")
+
     test_discharges = load_data(args.test_discharge_dataset)
 
     # sample the test_discharges
@@ -163,12 +161,12 @@ if __name__ == '__main__':
 
     for mode in modes:
         with open(args.prompt_folder_path + f'/{mode}_openai_prompt.json', 'r') as f:
-            prompts[mode] = f.read()
+            prompts[mode] = f.read().replace('\\n', '\n')
 
    
     for mode in modes:
         prompt = prompts[mode]
-        output_key = 'brief_hospital_course' if mode == 'bhc' else 'discharge_instructions' 
+        output_key = 'brief_hospital_course' if mode == 'bhc' else ('discharge_instructions' if mode == 'di' else None)
 
          # get the clean discharges
         test_discharges['clean_discharge'] = test_discharges[['text','brief_hospital_course','discharge_instructions']].progress_apply(axis = 1,
@@ -179,7 +177,7 @@ if __name__ == '__main__':
             n_shots = int(n_shots)
             print(f"Constructing the {mode} {n_shots}-shot prompts")
             
-            train_discharges_sample = train_discharges.sample(n_shots * args.nb_samples).reset_index()
+            train_discharges_sample = train_discharges.sample(n_shots * args.nb_samples)
             train_discharges_sample = build_combined_discharge(train_discharges_sample, train_targets)
 
             train_discharges_sample['clean_discharge'] = train_discharges_sample[['text','brief_hospital_course','discharge_instructions']].progress_apply(axis = 1, 
@@ -188,12 +186,12 @@ if __name__ == '__main__':
 
             test_discharges['clean_discharge_examples'] = train_discharges_sample['clean_discharge'].groupby(train_discharges_sample.index // n_shots).apply(list)
             test_discharges['output_examples'] = train_discharges_sample[output_key].groupby(train_discharges_sample.index // n_shots).apply(list)
-            test_discharges['examples_string'] = test_discharges.progress_apply(lambda x: concat_n_examples(x['clean_discharge_examples'], x['output_examples']), axis=1)
+            test_discharges['examples_string'] = test_discharges.progress_apply(lambda x: concat_n_examples(x['clean_discharge_examples'], x['output_examples'], mode=mode), axis=1)
 
             # construct the n-shot prompt
             test_discharges['prompt'] = test_discharges[['clean_discharge','examples_string']].progress_apply(axis = 1, func = lambda x: construct_n_shot_prompt(prompt, x['clean_discharge'], n_shots, x['examples_string']))
             
-            final_df = test_discharges[['prompt', output_key]].copy()
+            final_df = test_discharges[['hadm_id','prompt', output_key]].copy()
             final_df['idx'] = final_df.index
             final_df.rename(columns={output_key: 'gold'}, inplace=True)
 

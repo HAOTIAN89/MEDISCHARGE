@@ -219,7 +219,7 @@ class GPTWrapper():
             )
         except Exception as e:
             print(f'Error during generation: {e}')
-            print(f'Messages: {messages}')
+            #print(f'Messages: {messages}')
             return ''
         
         response = response.choices[0].message.content
@@ -228,8 +228,8 @@ class GPTWrapper():
             response = self.format_response(response)
         except Exception as e:
             print(f'Error formatting response: {e}')
-            print(f'Messages: {messages}')
-            print(f'Response: {response}')
+            #print(f'Messages: {messages}')
+            #print(f'Response: {response}')
             return response
         return response
 
