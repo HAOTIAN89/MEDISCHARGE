@@ -3,20 +3,22 @@
 from logging import warning
 import spacy
 from nltk.tokenize import sent_tokenize
+import nltk
+nltk.download('punkt')
 import torch
 from .model import BERTAlignModel
 from transformers import AutoConfig, AutoTokenizer
 import torch.nn as nn
 from tqdm import tqdm
 
+
 class Inferencer():
     def __init__(self, ckpt_path, model='bert-base-uncased', batch_size=32, device='cuda', verbose=True) -> None:
         self.device = device
         if ckpt_path is not None:
-            self.model = BERTAlignModel(model=model).load_from_checkpoint(checkpoint_path=ckpt_path, strict=False).to(self.device)
+            self.model = BERTAlignModel.load_from_checkpoint(checkpoint_path=ckpt_path, strict=False).to(self.device)
         else:
-            warning('loading UNTRAINED model!')
-            self.model = BERTAlignModel(model=model).to(self.device)
+            raise ValueError("No checkpoint path provided!")
         self.model.eval()
         self.batch_size = batch_size
 

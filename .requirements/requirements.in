@@ -53,3 +53,4 @@ ipykernel
 
 # DevOps
 pre-commit
+pip-tools
