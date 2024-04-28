@@ -7,10 +7,12 @@
 --find-links https://download.pytorch.org/whl/cu121
 
 absl-py==2.1.0
-    # via tensorboard
-accelerate==0.29.2
+    # via
+    #   rouge-score
+    #   tensorboard
+accelerate==0.29.3
     # via peft
-aiohttp==3.9.4
+aiohttp==3.9.5
     # via
     #   datasets
     #   fsspec
@@ -54,6 +56,8 @@ babel==2.14.0
     # via jupyterlab-server
 beautifulsoup4==4.12.3
     # via nbconvert
+bert-score==0.3.13
+    # via -r requirements.in
 bleach==6.1.0
     # via nbconvert
 blis==0.7.11
@@ -110,13 +114,15 @@ cymem==2.0.8
     #   preshed
     #   spacy
     #   thinc
-dask==2024.4.1
+cython==3.0.10
+    # via unqlite
+dask==2024.4.2
     # via -r requirements.in
 dataclasses-json==0.6.4
     # via
     #   langchain
     #   langchain-community
-datasets==2.18.0
+datasets==2.19.0
     # via
     #   -r requirements.in
     #   evaluate
@@ -142,13 +148,13 @@ docker-pycreds==0.4.0
     # via wandb
 evaluate==0.4.1
     # via -r requirements.in
-exceptiongroup==1.2.0
+exceptiongroup==1.2.1
     # via
     #   anyio
     #   ipython
 executing==2.0.1
     # via stack-data
-fastapi==0.110.1
+fastapi==0.110.2
     # via vllm
 fastjsonschema==2.19.1
     # via nbformat
@@ -161,6 +167,7 @@ filelock==3.13.4
     #   transformers
     #   triton
     #   virtualenv
+    #   vllm
 fonttools==4.51.0
     # via matplotlib
 fqdn==1.5.1
@@ -170,12 +177,13 @@ frozenlist==1.4.1
     #   aiohttp
     #   aiosignal
     #   ray
-fsspec[http]==2024.2.0
+fsspec[http]==2024.3.1
     # via
     #   dask
     #   datasets
     #   evaluate
     #   huggingface-hub
+    #   pytorch-lightning
     #   torch
 gitdb==4.0.11
     # via gitpython
@@ -183,7 +191,7 @@ gitpython==3.1.43
     # via wandb
 greenlet==3.0.3
     # via sqlalchemy
-grpcio==1.62.1
+grpcio==1.62.2
     # via tensorboard
 h11==0.14.0
     # via
@@ -209,7 +217,7 @@ huggingface-hub==0.22.2
     #   transformers
 humanfriendly==10.0
     # via coloredlogs
-identify==2.5.35
+identify==2.5.36
     # via pre-commit
 idna==3.7
     # via
@@ -221,7 +229,9 @@ idna==3.7
 importlib-metadata==7.1.0
     # via dask
 interegular==0.3.3
-    # via outlines
+    # via
+    #   lm-format-enforcer
+    #   outlines
 ipykernel==6.29.4
     # via
     #   -r requirements.in
@@ -229,7 +239,7 @@ ipykernel==6.29.4
     #   jupyter-console
     #   jupyterlab
     #   qtconsole
-ipython==8.23.0
+ipython==8.24.0
     # via
     #   ipykernel
     #   ipywidgets
@@ -308,11 +318,11 @@ jupyter-server==2.14.0
     #   notebook-shim
 jupyter-server-terminals==0.5.3
     # via jupyter-server
-jupyterlab==4.1.6
+jupyterlab==4.1.8
     # via notebook
 jupyterlab-pygments==0.3.0
     # via nbconvert
-jupyterlab-server==2.26.0
+jupyterlab-server==2.27.1
     # via
     #   jupyterlab
     #   notebook
@@ -322,30 +332,40 @@ kiwisolver==1.4.5
     # via matplotlib
 langchain==0.1.16
     # via -r requirements.in
-langchain-community==0.0.32
+langchain-community==0.0.34
     # via langchain
-langchain-core==0.1.42
+langchain-core==0.1.46
     # via
     #   langchain
     #   langchain-community
     #   langchain-text-splitters
 langchain-text-splitters==0.0.1
     # via langchain
-langcodes==3.3.0
+langcodes==3.4.0
     # via spacy
-langsmith==0.1.47
+langsmith==0.1.51
     # via
     #   langchain
     #   langchain-community
     #   langchain-core
+language-data==1.2.0
+    # via langcodes
 lark==1.1.9
     # via outlines
+leveldb==0.201
+    # via quickumls
 lightning-utilities==0.11.2
-    # via torchmetrics
+    # via
+    #   pytorch-lightning
+    #   torchmetrics
 llvmlite==0.42.0
     # via numba
+lm-format-enforcer==0.9.8
+    # via vllm
 locket==1.0.0
     # via partd
+marisa-trie==1.1.0
+    # via language-data
 markdown==3.6
     # via tensorboard
 markupsafe==2.1.5
@@ -358,8 +378,9 @@ marshmallow==3.21.1
 matplotlib==3.8.4
     # via
     #   -r requirements.in
+    #   bert-score
     #   seaborn
-matplotlib-inline==0.1.6
+matplotlib-inline==0.1.7
     # via
     #   ipykernel
     #   ipython
@@ -404,10 +425,13 @@ networkx==3.3
 ninja==1.11.1.1
     # via vllm
 nltk==3.8.1
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   quickumls
+    #   rouge-score
 nodeenv==1.8.0
     # via pre-commit
-notebook==7.1.2
+notebook==7.1.3
     # via jupyter
 notebook-shim==0.2.4
     # via
@@ -417,7 +441,9 @@ numba==0.59.1
     # via outlines
 numpy==1.26.4
     # via
+    #   -r requirements.in
     #   accelerate
+    #   bert-score
     #   blis
     #   contourpy
     #   datasets
@@ -431,6 +457,9 @@ numpy==1.26.4
     #   pandas
     #   peft
     #   pyarrow
+    #   pytorch-lightning
+    #   quickumls
+    #   rouge-score
     #   scikit-learn
     #   scipy
     #   seaborn
@@ -466,7 +495,9 @@ nvidia-cusparse-cu12==12.1.0.106
     # via
     #   nvidia-cusolver-cu12
     #   torch
-nvidia-nccl-cu12==2.18.1
+nvidia-ml-py==12.550.52
+    # via vllm
+nvidia-nccl-cu12==2.19.3
     # via torch
 nvidia-nvjitlink-cu12==12.4.127
     # via
@@ -474,11 +505,11 @@ nvidia-nvjitlink-cu12==12.4.127
     #   nvidia-cusparse-cu12
 nvidia-nvtx-cu12==12.1.105
     # via torch
-openai==1.17.1
+openai==1.23.6
     # via -r requirements.in
-optimum==1.18.1
+optimum==1.19.1
     # via -r requirements.in
-orjson==3.10.0
+orjson==3.10.1
     # via langsmith
 outlines==0.0.34
     # via vllm
@@ -487,6 +518,7 @@ overrides==7.7.0
 packaging==23.2
     # via
     #   accelerate
+    #   bert-score
     #   dask
     #   datasets
     #   evaluate
@@ -497,11 +529,13 @@ packaging==23.2
     #   jupyterlab-server
     #   langchain-core
     #   lightning-utilities
+    #   lm-format-enforcer
     #   marshmallow
     #   matplotlib
     #   nbconvert
     #   optimum
     #   peft
+    #   pytorch-lightning
     #   qtconsole
     #   qtpy
     #   ray
@@ -513,6 +547,7 @@ packaging==23.2
 pandas==2.2.2
     # via
     #   -r requirements.in
+    #   bert-score
     #   datasets
     #   evaluate
     #   seaborn
@@ -530,7 +565,7 @@ pillow==10.3.0
     # via
     #   matplotlib
     #   sentence-transformers
-platformdirs==4.2.0
+platformdirs==4.2.1
     # via
     #   jupyter-core
     #   virtualenv
@@ -569,26 +604,27 @@ pure-eval==0.2.2
     # via stack-data
 py-cpuinfo==9.0.0
     # via vllm
-pyarrow==15.0.2
+pyarrow==16.0.0
     # via datasets
 pyarrow-hotfix==0.6
     # via datasets
 pycparser==2.22
     # via cffi
-pydantic==2.7.0
+pydantic==2.7.1
     # via
     #   confection
     #   fastapi
     #   langchain
     #   langchain-core
     #   langsmith
+    #   lm-format-enforcer
     #   openai
     #   outlines
     #   spacy
     #   thinc
     #   vllm
     #   weasel
-pydantic-core==2.18.1
+pydantic-core==2.18.2
     # via pydantic
 pygments==2.17.2
     # via
@@ -596,8 +632,6 @@ pygments==2.17.2
     #   jupyter-console
     #   nbconvert
     #   qtconsole
-pynvml==11.5.0
-    # via vllm
 pyparsing==3.1.2
     # via matplotlib
 python-dateutil==2.9.0.post0
@@ -610,6 +644,8 @@ python-dotenv==1.0.1
     # via uvicorn
 python-json-logger==2.0.7
     # via jupyter-events
+pytorch-lightning==2.2.3
+    # via -r requirements.in
 pytz==2024.1
     # via pandas
 pyyaml==6.0.1
@@ -622,13 +658,15 @@ pyyaml==6.0.1
     #   langchain
     #   langchain-community
     #   langchain-core
+    #   lm-format-enforcer
     #   peft
     #   pre-commit
+    #   pytorch-lightning
     #   ray
     #   transformers
     #   uvicorn
     #   wandb
-pyzmq==25.1.2
+pyzmq==26.0.2
     # via
     #   ipykernel
     #   jupyter-client
@@ -639,21 +677,26 @@ qtconsole==5.5.1
     # via jupyter
 qtpy==2.4.1
     # via qtconsole
-ray==2.10.0
+quickumls==1.4.2
+    # via -r requirements.in
+quickumls-simstring==1.1.5.post1
+    # via quickumls
+ray==2.12.0
     # via vllm
-referencing==0.34.0
+referencing==0.35.0
     # via
     #   jsonschema
     #   jsonschema-specifications
     #   jupyter-events
     #   outlines
-regex==2023.12.25
+regex==2024.4.16
     # via
     #   nltk
     #   tiktoken
     #   transformers
 requests==2.31.0
     # via
+    #   bert-score
     #   datasets
     #   evaluate
     #   huggingface-hub
@@ -682,11 +725,13 @@ rfc3986-validator==0.1.1
     # via
     #   jsonschema
     #   jupyter-events
+rouge-score==0.1.2
+    # via -r requirements.in
 rpds-py==0.18.0
     # via
     #   jsonschema
     #   referencing
-safetensors==0.4.2
+safetensors==0.4.3
     # via
     #   accelerate
     #   peft
@@ -705,23 +750,26 @@ seaborn==0.13.2
     # via -r requirements.in
 send2trash==1.8.3
     # via jupyter-server
-sentence-transformers==2.6.1
+sentence-transformers==2.7.0
     # via -r requirements.in
 sentencepiece==0.2.0
     # via
     #   transformers
     #   vllm
-sentry-sdk==1.45.0
+sentry-sdk==2.0.1
     # via wandb
 setproctitle==1.3.3
     # via wandb
 six==1.16.0
     # via
+    #   -r requirements.in
     #   asttokens
     #   bleach
     #   docker-pycreds
     #   python-dateutil
+    #   quickumls
     #   rfc3339-validator
+    #   rouge-score
     #   tensorboard
 smart-open==6.4.0
     # via
@@ -737,7 +785,9 @@ sniffio==1.3.1
 soupsieve==2.5
     # via beautifulsoup4
 spacy==3.7.4
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   quickumls
 spacy-legacy==3.0.12
     # via spacy
 spacy-loggers==1.0.5
@@ -781,23 +831,27 @@ tiktoken==0.6.0
     # via
     #   -r requirements.in
     #   vllm
-tinycss2==1.2.1
+tinycss2==1.3.0
     # via nbconvert
-tokenizers==0.15.2
-    # via transformers
+tokenizers==0.19.1
+    # via
+    #   transformers
+    #   vllm
 tomli==2.0.1
     # via jupyterlab
 toolz==0.12.1
     # via
     #   dask
     #   partd
-torch==2.1.2
+torch==2.2.1
     # via
     #   -r requirements.in
     #   accelerate
+    #   bert-score
     #   optimum
     #   outlines
     #   peft
+    #   pytorch-lightning
     #   sentence-transformers
     #   torchdata
     #   torchmetrics
@@ -807,8 +861,10 @@ torch==2.1.2
 torchdata==0.7.1
     # via torchtext
 torchmetrics==1.3.2
-    # via -r requirements.in
-torchtext==0.16.2
+    # via
+    #   -r requirements.in
+    #   pytorch-lightning
+torchtext==0.17.1
     # via -r requirements.in
 tornado==6.4
     # via
@@ -820,17 +876,19 @@ tornado==6.4
     #   terminado
 tqdm==4.66.2
     # via
+    #   bert-score
     #   datasets
     #   evaluate
     #   huggingface-hub
     #   nltk
     #   openai
     #   peft
+    #   pytorch-lightning
     #   sentence-transformers
     #   spacy
     #   torchtext
     #   transformers
-traitlets==5.14.2
+traitlets==5.14.3
     # via
     #   comm
     #   ipykernel
@@ -847,18 +905,17 @@ traitlets==5.14.2
     #   nbconvert
     #   nbformat
     #   qtconsole
-transformers[sentencepiece]==4.39.3
+transformers[sentencepiece]==4.40.1
     # via
     #   -r requirements.in
+    #   bert-score
     #   optimum
     #   outlines
     #   peft
     #   sentence-transformers
     #   vllm
-triton==2.1.0
-    # via
-    #   torch
-    #   vllm
+triton==2.2.0
+    # via torch
 typer==0.9.4
     # via
     #   spacy
@@ -877,15 +934,21 @@ typing-extensions==4.11.0
     #   openai
     #   pydantic
     #   pydantic-core
+    #   pytorch-lightning
     #   sqlalchemy
     #   torch
     #   typer
     #   typing-inspect
     #   uvicorn
+    #   vllm
 typing-inspect==0.9.0
     # via dataclasses-json
 tzdata==2024.1
     # via pandas
+unidecode==1.3.8
+    # via quickumls
+unqlite==0.9.6
+    # via quickumls
 uri-template==1.3.0
     # via jsonschema
 urllib3==2.2.1
@@ -898,10 +961,12 @@ uvicorn[standard]==0.29.0
     # via vllm
 uvloop==0.19.0
     # via uvicorn
-virtualenv==20.25.1
+virtualenv==20.26.0
     # via pre-commit
-vllm==0.4.0.post1
+vllm==0.4.1
     # via -r requirements.in
+vllm-nccl-cu12==2.18.1.0.4.0
+    # via vllm
 wandb==0.16.6
     # via -r requirements.in
 wasabi==1.1.2
@@ -921,7 +986,7 @@ webencodings==0.5.1
     # via
     #   bleach
     #   tinycss2
-websocket-client==1.7.0
+websocket-client==1.8.0
     # via jupyter-server
 websockets==12.0
     # via uvicorn
@@ -929,7 +994,7 @@ werkzeug==3.0.2
     # via tensorboard
 widgetsnbextension==4.0.10
     # via ipywidgets
-xformers==0.0.23.post1
+xformers==0.0.25
     # via vllm
 xxhash==3.4.1
     # via

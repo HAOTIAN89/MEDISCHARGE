@@ -20,7 +20,6 @@ CUDA121_WHEELS:="https://download.pytorch.org/whl/cu121"
 # Skip this if $(REQ_TXT) already up-to-date.
 # Run this if $(REQ_IN) has been updated.
 requirements.txt: $(REQ_IN)
-	rm -f $(REQ_TXT)
 	pip-compile --output-file=$(REQ_TXT) --find-links=$(CUDA121_WHEELS) $(REQ_IN)
 
 #########################

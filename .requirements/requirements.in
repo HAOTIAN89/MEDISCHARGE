@@ -1,7 +1,9 @@
 # DL/ML
-torch==2.1.2
+torch>=2.0.0
 scikit-learn
-flash-attn==2.5.2
+pytorch-lightning
+flash-attn
+# flash-attn==2.5.2
 
 # NLP
 transformers
@@ -13,6 +15,9 @@ spacy
 nltk
 tiktoken
 openai
+
+# Biomedical
+quickumls
 
 # Scoring
 torchmetrics
