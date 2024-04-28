@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import argparse
 from tqdm import tqdm
+# from pathlib import Path
 
 import evaluate
 
@@ -11,9 +12,9 @@ from .bleu import Bleu
 from .rouge import Rouge
 from .bertscore import BertScore
 from .align import AlignScorer
-from .UMLSScorer import UMLSScorer
+# from .UMLSScorer import UMLSScorer
 
-SUPPORTED_METRICS = {"bleu", "rouge", "bertscore", "meteor", "align", "medcon"}
+SUPPORTED_METRICS = {"bleu", "rouge", "bertscore", "meteor", "align"}#, "medcon"}
 def calculate_scores(generated, reference, metrics, batch_size=8):
     if not metrics:
         raise ValueError("No metrics specified for scoring.")
@@ -43,9 +44,10 @@ def calculate_scores(generated, reference, metrics, batch_size=8):
     if "align" in metrics:
         alignScorer = AlignScorer()
         print("alignScorer initialized")
-    if "medcon" in metrics:
-        medconScorer = UMLSScorer(quickumls_fp="/home/quickumls/")
-        print("medconScorer initialized")
+    # if "medcon" in metrics:
+    #     quickumls_fp = (Path(__file__).parent / "quickumls/").as_posix()
+    #     medconScorer = UMLSScorer(quickumls_fp=quickumls_fp)
+    #     print("medconScorer initialized")
         
     pbar = tqdm(total=len(generated), desc="Processing samples")
         
@@ -119,19 +121,19 @@ def calculate_scores(generated, reference, metrics, batch_size=8):
                 hyps=rows_gen["brief_hospital_course"].tolist(),
             )
             scores["align"]["brief_hospital_course"].extend(temp)
-        if "medcon" in metrics:
-            # Discharge Instructions
-            temp = medconScorer(
-                rows_ref["discharge_instructions"].tolist(),
-                rows_gen["discharge_instructions"].tolist(),
-            )
-            scores["medcon"]["discharge_instructions"].extend(temp)
-            # Brief Hospital Course
-            temp = medconScorer(
-                rows_ref["brief_hospital_course"].tolist(),
-                rows_gen["brief_hospital_course"].tolist(),
-            )
-            scores["medcon"]["brief_hospital_course"].extend(temp)
+        # if "medcon" in metrics:
+        #     # Discharge Instructions
+        #     temp = medconScorer(
+        #         rows_ref["discharge_instructions"].tolist(),
+        #         rows_gen["discharge_instructions"].tolist(),
+        #     )
+        #     scores["medcon"]["discharge_instructions"].extend(temp)
+        #     # Brief Hospital Course
+        #     temp = medconScorer(
+        #         rows_ref["brief_hospital_course"].tolist(),
+        #         rows_gen["brief_hospital_course"].tolist(),
+        #     )
+        #     scores["medcon"]["brief_hospital_course"].extend(temp)
 
         # print progress
         current_row = i + batch_size
@@ -220,16 +222,16 @@ def compute_overall_score(scores):
         leaderboard["align"] = np.mean(
             [align_discharge_instructions, align_brief_hospital_course]
         )
-    if "medcon" in metrics:
-        medcon_discharge_instructions = np.mean(
-            scores["medcon"]["discharge_instructions"]
-        )
-        medcon_brief_hospital_course = np.mean(
-            scores["medcon"]["brief_hospital_course"]
-        )
-        leaderboard["medcon"] = np.mean(
-            [medcon_discharge_instructions, medcon_brief_hospital_course]
-        )
+    # if "medcon" in metrics:
+    #     medcon_discharge_instructions = np.mean(
+    #         scores["medcon"]["discharge_instructions"]
+    #     )
+    #     medcon_brief_hospital_course = np.mean(
+    #         scores["medcon"]["brief_hospital_course"]
+    #     )
+    #     leaderboard["medcon"] = np.mean(
+    #         [medcon_discharge_instructions, medcon_brief_hospital_course]
+    #     )
         
     # normalize sacrebleu to be between 0 and 1
     for key in leaderboard.keys():

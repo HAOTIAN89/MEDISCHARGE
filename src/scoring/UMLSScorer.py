@@ -1,10 +1,7 @@
 import spacy
 import torch.nn
 from quickumls import QuickUMLS
-
-if not spacy.util.is_package("en_core_web_sm"):
-    # Download and install the 'en_core_web_sm' model
-    spacy.cli.download("en_core_web_sm")
+from pathlib import Path
 
 SEMANTICS = ['T017', 'T029', 'T023', 'T030', 'T031', 'T022', 'T025', 'T026', 'T018', 'T021', 'T024', 'T116', 'T195',
              'T123', 'T122', 'T103', 'T120', 'T104', 'T200', 'T196', 'T126', 'T131', 'T125', 'T129', 'T130', 'T197',
@@ -16,7 +13,7 @@ SEMANTICS = ['T017', 'T029', 'T023', 'T030', 'T031', 'T022', 'T025', 'T026', 'T0
 
 class UMLSScorer(torch.nn.Module):
 
-    def __init__(self, use_umls=True, quickumls_fp="quickumls/"):
+    def __init__(self, quickumls_fp, use_umls=True):
         super().__init__()
         self.quickumls_fp = quickumls_fp
         self.WINDOW_SIZE = 5
@@ -70,3 +67,12 @@ class UMLSScorer(torch.nn.Module):
 
     def forward(self, reference, prediction):
         return self.umls_score_group(reference, prediction)
+    
+if __name__ == "__main__":
+    scorer = UMLSScorer()
+    reference = ["The patient is a 44-year"]
+    prediction = ["The patient is a 44-year-old"]
+    one  = scorer.umls_score_individual(reference, prediction)
+    many = scorer.umls_score_group(reference * 2, prediction * 2)
+    print(one)
+    print(many)   
