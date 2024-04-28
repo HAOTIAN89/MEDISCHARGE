@@ -5,11 +5,12 @@
 ###########################################################################################
 PYTHON_CMD:=python
 
-VENV_PATH:=$(PWD)/../.venv
+VENV_PATH:=$(PWD)/../.venvquickumls
 REQ_IN:=requirements.in
 REQ_TXT:=requirements.txt
 
 CUDA121_WHEELS:="https://download.pytorch.org/whl/cu121"
+CUDA118_WHEELS:="https://download.pytorch.org/whl/cu118"
 
 #########################
 # FILES
