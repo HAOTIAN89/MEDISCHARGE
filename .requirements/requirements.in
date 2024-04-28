@@ -9,7 +9,7 @@ sentence-transformers
 vllm
 langchain
 torchtext
-spacy
+spacy>=3.4.1
 nltk
 tiktoken
 openai
