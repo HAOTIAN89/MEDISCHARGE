@@ -17,8 +17,6 @@ from utils.token_count import get_token_count
 
 def load_data(file_path: str, type='gzip') -> pd.DataFrame:
     """Loads the data from the file_path."""
-    #print(f"Loading data from {file_path}")
-    #print(f"the current directory is {os.getcwd()}")
     if type == 'gzip':
         return pd.read_csv(file_path, compression='gzip')
     elif type == 'csv':
@@ -52,19 +50,61 @@ def build_combined_discharge(discharges: pd.DataFrame, discharges_target: pd.Dat
     
     return combined_discharge_train_df
 
+def remove_bhc_di(raw_discharge: str, bhc:str, di:str, mode:str='bhc'):
+    '''
+    Remove the BHC or DI from the discharge
+    input:
+        raw_discharge: str
+            The raw discharge
+        bhc: str
+            The BHC text to be removed
+        di: str
+            The DI text to be removed
+        mode: str
+            Either bhc or di
 
-def get_bhc_input(combined_discharges: pd.DataFrame) -> pd.DataFrame:
-    original_bhc_input = combined_discharges['text'].progress_apply(
-        lambda x: re.sub(r'Brief Hospital Course:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)',
-                        '',
-                        x,
-                        flags=re.DOTALL))
+    output:
+        clean_discharge: str
+            The clean discharge
+    '''
+    bhc_title = 'Brief Hospital Course:'
+    di_title = 'Discharge Instructions:'
+
+    #throw error if the BHC or DI is not in the discharge
+
+
+    if di not in raw_discharge:
+        print(f"The DI: {di} is not in the discharge")
+        print(f"The raw discharge is: {raw_discharge}")
+        raise ValueError
     
-    original_bhc_input = original_bhc_input.progress_apply(
-            lambda x: re.sub(r'Discharge Instructions:\n(.*?)Followup Instruction',
-                             '',
-                             x,
-                             flags=re.DOTALL))
+    
+    
+    if di_title not in raw_discharge:
+        print(f"The DI title: {di_title} is not in the discharge")
+        print(f"The raw discharge is: {raw_discharge}")
+        raise ValueError
+    
+    clean_discharge = raw_discharge.replace(di_title, '').replace(di, '')
+
+    if mode == 'bhc':
+        if bhc not in raw_discharge:
+            print(f"The BHC: {bhc} is not in the discharge")
+            print(f"The raw discharge is: {raw_discharge}")
+            raise ValueError
+        
+        if bhc_title not in raw_discharge:
+            print(f"The BHC title: {bhc_title} is not in the discharge")
+            print(f"The raw discharge is: {raw_discharge}")
+            raise ValueError
+
+        clean_discharge = clean_discharge.replace(bhc_title, '').replace(bhc, '')
+
+    return clean_discharge
+
+
+def get_bhc_input(combined_discharges: pd.DataFrame, mode ='bhc') -> pd.DataFrame:
+    original_bhc_input = combined_discharges.progress_apply(lambda x: remove_bhc_di(x['text'], x['brief_hospital_course'], x['discharge_instructions'], mode=mode), axis=1)
     
     return original_bhc_input
 

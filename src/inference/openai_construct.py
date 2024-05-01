@@ -193,6 +193,7 @@ if __name__ == '__main__':
             
             final_df = test_discharges[['hadm_id','prompt', output_key]].copy()
             final_df.rename(columns={'hadm_id': 'idx'}, inplace=True)
+            
             final_df.rename(columns={output_key: 'gold'}, inplace=True)
 
             output_path = args.output_folder_path + f'/openai_input_{mode}_{n_shots}_shots.jsonl'
