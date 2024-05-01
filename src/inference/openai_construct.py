@@ -192,7 +192,7 @@ if __name__ == '__main__':
             test_discharges['prompt'] = test_discharges[['clean_discharge','examples_string']].progress_apply(axis = 1, func = lambda x: construct_n_shot_prompt(prompt, x['clean_discharge'], n_shots, x['examples_string']))
             
             final_df = test_discharges[['hadm_id','prompt', output_key]].copy()
-            final_df['idx'] = final_df.index
+            final_df.rename(columns={'hadm_id': 'idx'}, inplace=True)
             final_df.rename(columns={output_key: 'gold'}, inplace=True)
 
             output_path = args.output_folder_path + f'/openai_input_{mode}_{n_shots}_shots.jsonl'

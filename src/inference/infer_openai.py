@@ -22,7 +22,7 @@ tqdm.pandas()
 
 KEY_PATH = 'src/inference/keys.json'
 # MODEL = 'gpt-4-0125-preview'
-MODEL = 'gpt-3.5-turbo-0125'
+MODEL = 'gpt-4-turbo-2024-04-09'
 
 class GPTWrapper(): 
     '''
@@ -31,7 +31,7 @@ class GPTWrapper():
     def __init__(self, model=MODEL, key_path=KEY_PATH):
 
         self.model = model
-        self.max_tokens_per_batch = 5000000
+        self.max_tokens_per_batch = 300000
         self.prompt = None
         self.max_tokens = 2000
         self.temperature = 0.7
@@ -246,6 +246,7 @@ class GPTWrapper():
         #Load what was already done
         if os.path.exists(save_path):
             answers = load_file(save_path)
+            answers = answers[answers["answer"].notnull() & answers['answer'] != ""] 
             print(f"Loaded {answers.shape[0]} answers from {save_path}. Resuming generation.")
             if answers.shape[0] == user_prompts.shape[0]:
                 print("All prompts have already been answered.")
