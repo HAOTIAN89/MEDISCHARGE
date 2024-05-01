@@ -112,8 +112,13 @@ def get_bhc_input(combined_discharges: pd.DataFrame, mode ='bhc') -> pd.DataFram
 
 def extract_sex(text):
     sex = re.findall(r'Sex:\s*\n{0,2}(.*?)\nService:', text, re.DOTALL)
-    sex_text = "Sex: \n" + ''.join(sex)
+    sex_text = "Sex:   " + ''.join(sex)
     return sex_text
+
+def extract_service(text):
+    service = re.findall(r'Service:\s*\n{0,2}(.*?)\nAllergies:', text, re.DOTALL)
+    service_text = "\nService: " + ''.join(service)
+    return service_text
 
 def extract_allergies(text):
     allergies = re.findall(r'Allergies:\s*\n{0,2}(.*?)\nAttending:', text, re.DOTALL)
@@ -122,42 +127,44 @@ def extract_allergies(text):
 
 def extract_chief_complaint(text):
     chief_complaint = re.findall(r'Chief Complaint:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    chief_complaint_text = "\nChief Complaint: \n" + ''.join(chief_complaint)
+    chief_complaint_text = "\nChief Complaint:\n" + ''.join(chief_complaint)
     return chief_complaint_text
 
 def extract_major_surgical_procedures(text):
     major_surgical_procedures = re.findall(r'Major Surgical or Invasive Procedure:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    major_surgical_procedures_text = "\n\nMajor Surgical or Invasive Procedure: \n" + ''.join(major_surgical_procedures)
+    major_surgical_procedures_text = "\n\nMajor Surgical or Invasive Procedure:\n" + ''.join(major_surgical_procedures)
     return major_surgical_procedures_text
 
-def extract_history_of_present_illness(text):
+def extract_history_of_present_illness(text): # TODO: changer le regex
     history_of_present_illness = re.findall(r'History of Present Illness:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    history_of_present_illness_text = "\n\nHistory of Present Illness: \n" + ''.join(history_of_present_illness)
+    history_of_present_illness_text = "\n\nHistory of Present Illness:\n" + ''.join(history_of_present_illness)
     return history_of_present_illness_text
 
-def extract_past_medical_history(text):
+def extract_past_medical_history(text): # TODO: changer le regex
     past_medical_history = re.findall(r'Past Medical History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    past_medical_history_text = "\n\nPast Medical History: \n" + ''.join(past_medical_history)
+    past_medical_history_text = "\n\nPast Medical History:\n" + ''.join(past_medical_history)
     return past_medical_history_text
+
+# TODO: Past surgical history:
 
 def extract_social_history(text):
     social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    social_history_text = "\n\nSocial History: \n" + ''.join(social_history)
+    social_history_text = "\n\nSocial History:\n" + ''.join(social_history)
     return social_history_text
 
 def extract_family_history(text):
     family_history = re.findall(r'Family History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    family_history_text = "\n\nFamily History: \n" + ''.join(family_history)
+    family_history_text = "\n\nFamily History:\n" + ''.join(family_history)
     return family_history_text
 
-def extract_physical_exam(text):
+def extract_physical_exam(text): # TODO: changer le regex
     physical_exam = re.findall(r'Physical Exam:\s*\n{0,2}(.*?)Pertinent Results:', text, re.DOTALL)
-    physical_exam_text = "\n\nPhysical Exam: \n" + ''.join(physical_exam)
+    physical_exam_text = "\n\nPhysical Exam:\n" + ''.join(physical_exam)
     return physical_exam_text
 
 def extract_pertinent_results(text):
     pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
-    pertinent_results_text = "\n\nPertinent Results: \n" + ''.join(pertinent_results)
+    pertinent_results_text = "\n\nPertinent Results:\n" + ''.join(pertinent_results)
     return pertinent_results_text
 
 
@@ -165,15 +172,15 @@ def extract_medication_on_admission(text):
     rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ on Admission', '[A-Za-z_]+ Medications')
     section_ext = re.findall(rex, text, re.DOTALL)
     if len(section_ext) > 0:
-        return "Medications on Admission: \n" + ''.join(section_ext[-1][1]) + '\n'
+        return "Medications on Admission:\n" + ''.join(section_ext[-1][1]) + '\n'
     else:
         return " "
 
-def extract_discharge_medications(text):
+def extract_discharge_medications(text): # TODO: changer le regex
     rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Medications', '[A-Za-z_]+ Disposition')
     section_ext = re.findall(rex, text, re.DOTALL)
     if len(section_ext) > 0:
-        return "Discharge Medications: \n" + ''.join(section_ext[-1][1]) + '\n'
+        return "Discharge Medications:\n" + ''.join(section_ext[-1][1]) + '\n'
     else:
         return " "
 
@@ -181,7 +188,7 @@ def extract_discharge_disposition(text):
     rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Disposition', '[A-Za-z_]+ Diagnosis')
     section_ext = re.findall(rex, text, re.DOTALL)
     if len(section_ext) > 0:
-        return "Discharge Disposition: \n" + ''.join(section_ext[-1][1]) + '\n'
+        return "Discharge Disposition:\n" + ''.join(section_ext[-1][1]) + '\n'
     else:
         return " "
 
@@ -189,7 +196,7 @@ def extract_discharge_diagnosis(text):
     rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Diagnosis', '[A-Za-z_]+ Condition')
     section_ext = re.findall(rex, text, re.DOTALL)
     if len(section_ext) > 0:
-        return "Discharge Diagnosis: \n" + ''.join(section_ext[-1][1]) + '\n'
+        return "Discharge Diagnosis:\n" + ''.join(section_ext[-1][1]) + '\n'
     else:
         return " "
 
@@ -197,12 +204,13 @@ def extract_discharge_condition(text):
     rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Condition', '[A-Za-z_]+ Instructions')
     section_ext = re.findall(rex, text, re.DOTALL)
     if len(section_ext) > 0:
-        return "Discharge Condition: \n" + ''.join(section_ext[-1][1]) + '\n'
+        return "Discharge Condition:\n" + ''.join(section_ext[-1][1]) + '\n'
     else:
         return " "
 
 feature_to_header = {
     'sex': 'Sex',
+    'service': 'Service',
     'allergies': 'Allergies',
     'chief_complaint': 'Chief Complaint',
     'major_surgical_procedures': 'Major Surgical or Invasive Procedure',
@@ -221,6 +229,7 @@ feature_to_header = {
 
 feature_to_function = {
     'sex': extract_sex, #important
+    'service': extract_service, 
     'allergies': extract_allergies, 
     'chief_complaint': extract_chief_complaint, #important
     'major_surgical_procedures': extract_major_surgical_procedures,
@@ -324,29 +333,29 @@ def remove_unecessary_tokens(text):
 
 
 bhc_strategy = [
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness'],
-    ['sex', 'allergies', 'chief_complaint', 'history_of_present_illness'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'physical_exam', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'allergies', 'chief_complaint', 'physical_exam'],
-    ['sex', 'allergies', 'chief_complaint', 'pertinent_results'],
-    ['sex', 'allergies', 'chief_complaint', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'history_of_present_illness'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'past_medical_history'],
 ]
 
 di_strategy = [["medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"], 
@@ -471,6 +480,7 @@ if __name__ == "__main__":
         original_bhc_input = get_bhc_input(combined_discharges)
         features_to_include = [
                 'sex',
+                'service',
                 'allergies',
                 'chief_complaint',
                 'major_surgical_procedures',
