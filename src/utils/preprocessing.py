@@ -265,8 +265,8 @@ def extract_one_clean_input(text: str, features_to_include: list) -> str:
             extracted_features.append(feature_to_function[feature](text) + '\n')
             continue
         
-        # BLANK SECTION with header if feature not included
-        extracted_features.append('\n' + feature_to_header[feature] + ': \n')
+        '''# BLANK SECTION with header if feature not included
+            extracted_features.append('\n' + feature_to_header[feature] + ': \n')'''
         
     return ''.join(extracted_features)
             
@@ -416,8 +416,11 @@ def select_strategy(df, mode, max_length=1548):
         total_tokens = 0
         for select in strategies:
             total_tokens = 0
-            for section in select:
-                total_tokens += row[section + "_tokens"]
+            for section in feature_to_header:
+                if section in select:
+                    total_tokens += row[section + "_tokens"]
+                else:
+                    total_tokens += get_token_count('\n' + feature_to_header[section] + ': \n')
             if total_tokens < max_length: 
                 final_select = select
                 break
@@ -427,12 +430,12 @@ def select_strategy(df, mode, max_length=1548):
         
         if final_select == strategies[-1] and total_tokens >= max_length:
             output = '\n'.join([
-                row[section] for section in final_select if section in row
+                row[section] if section in final_select else '\n' + feature_to_header[section] + ': \n' for section in feature_to_header
             ])[0:max_length]
             too_long += 1
         else:
             output = '\n'.join([
-                row[section] for section in final_select if section in row
+                row[section] if section in final_select else '\n' + feature_to_header[section] + ': \n' for section in feature_to_header
             ])
         outputs.append(output)
         
@@ -547,4 +550,3 @@ if __name__ == "__main__":
     print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
 
     save_data(in_out, output_path)
-
