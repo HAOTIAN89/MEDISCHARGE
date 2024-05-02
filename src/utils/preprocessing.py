@@ -109,104 +109,210 @@ def get_bhc_input(combined_discharges: pd.DataFrame, mode ='bhc') -> pd.DataFram
     return original_bhc_input
 
 
-
 def extract_sex(text):
-    sex = re.findall(r'Sex:\s*\n{0,2}(.*?)\nService:', text, re.DOTALL)
+    sex = re.findall(r'Sex:\s*\n{0,2}(.*?)\n(?:Service:|___:.*?\nAllergies:)', text, re.DOTALL)
+    if not sex:
+        print("HERE")
+        print(text)
+        raise ValueError("Sex not found")
     sex_text = "Sex:   " + ''.join(sex)
     return sex_text
 
 def extract_service(text):
-    service = re.findall(r'Service:\s*\n{0,2}(.*?)\nAllergies:', text, re.DOTALL)
+    service = re.findall(r'(?:Service:|Sex:.*?\n \n___:)\s*\n{0,2}(.*?)\nAllergies:', text, re.DOTALL)
+    if not service:
+        print(text)
+        raise ValueError("Service not found")
     service_text = "\nService: " + ''.join(service)
     return service_text
 
 def extract_allergies(text):
-    allergies = re.findall(r'Allergies:\s*\n{0,2}(.*?)\nAttending:', text, re.DOTALL)
+    allergies = re.findall(r'Allergies:\s*\n{0,2}(.*?)\n(?:Attending:|___.\n \nChief Complaint:)', text, re.DOTALL)
+    if not allergies:
+        print(text)
+        raise ValueError("Allergies not found.")
     allergies_text = "\nAllergies: \n" + ''.join(allergies)
     return allergies_text
 
 def extract_chief_complaint(text):
-    chief_complaint = re.findall(r'Chief Complaint:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    if 'Complaint' in text:
+        chief_complaint = re.findall(r'Complaint:\s*\n{0,2}(.*?)\n(?:Major Surgical or Invasive Procedure:|___ Surgical or Invasive Procedure:|Major ___ or Invasive Procedure:|___ or Invasive Procedure:)', text, re.DOTALL) 
+        
+        if not chief_complaint:
+            if "chief complaint" in text.lower():
+                print(text)
+                raise ValueError("Chief Complaint not found.")
+    else:
+        chief_complaint = []
+    #chief_complaint = re.findall(r'Chief Complaint:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
     chief_complaint_text = "\nChief Complaint:\n" + ''.join(chief_complaint)
     return chief_complaint_text
 
 def extract_major_surgical_procedures(text):
-    major_surgical_procedures = re.findall(r'Major Surgical or Invasive Procedure:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    major_surgical_procedures_text = "\n\nMajor Surgical or Invasive Procedure:\n" + ''.join(major_surgical_procedures)
+    major_surgical_procedures = re.findall(r'(?:Major Surgical or Invasive Procedure:|___ Surgical or Invasive Procedure:)\s*\n{0,2}(.*?)\nHistory of Present Illness:', text, re.DOTALL)
+    if not major_surgical_procedures:
+        major_surgical_procedures = re.findall(r'Major Surgical or Invasive Procedure:\s*\n{0,2}(.*?)\n(?:Pertinent Results:|Brief Hospital Course:)', text, re.DOTALL)
+        if not major_surgical_procedures:
+            if "major surgical procedures" in text.lower():
+                print(text)
+                raise ValueError("Major Surgical Procedures not found.")
+    major_surgical_procedures_text = "\nMajor Surgical or Invasive Procedure:\n" + ''.join(major_surgical_procedures)
     return major_surgical_procedures_text
 
 def extract_history_of_present_illness(text): # TODO: changer le regex
-    history_of_present_illness = re.findall(r'History of Present Illness:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    history_of_present_illness = re.findall(r'(?:History of Present Illness:|HISTORY OF PRESENT ILLNESS:)\s*\n{0,2}(.*?)\n(?:REVIEW OF SYSTEMS:|Review of sytems:|Social History:|Family History:|Physical Exam:|Brief Hospital Course:)', text, re.DOTALL)
+    if not history_of_present_illness:
+        history_of_present_illness = re.findall(r'History of Present Illness:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)
+    #if not found, try with capital letters
+    if not history_of_present_illness:
+        history_of_present_illness = re.findall(r'HISTORY OF THE PRESENTING ILLNESS:\s*\n{0,2}(.*?)\nREVIEW OF SYSTEMS:', text, re.DOTALL)
+    
+    if not history_of_present_illness:
+        if "history of present illness" in text.lower() or "history of the presenting illness" in text.lower():
+            print(text)
+            raise ValueError("history of present_illness not found")
+
     history_of_present_illness_text = "\n\nHistory of Present Illness:\n" + ''.join(history_of_present_illness)
     return history_of_present_illness_text
 
+def extract_review_of_systems(text):
+    if 'REVIEW OF SYSTEMS' in text:
+        review_of_systems = re.findall(r'REVIEW OF SYSTEMS:?\s*\n{0,2}(.*?)\n(?:Past Medical History:|Social History:)', text, re.DOTALL)
+
+        if not review_of_systems:
+            print(text)
+            raise ValueError("Review of Systems not found.")
+    elif 'review of systems:' in text.lower():
+        review_of_systems = re.findall(r'Review of Systems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
+        if not review_of_systems:
+            review_of_systems = re.findall(r'Review of systems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
+            if not review_of_systems:
+                review_of_systems = re.findall(r'Review of sytems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
+                if not review_of_systems:
+                    print(text)
+                    #raise ValueError("Review of Systems not found.")
+    else:
+        review_of_systems = []
+
+    review_of_systems_text = "\n\nReview of Systems:\n" + ''.join(review_of_systems)
+  
+    return review_of_systems_text
+
 def extract_past_medical_history(text): # TODO: changer le regex
-    past_medical_history = re.findall(r'Past Medical History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    if 'past medical history:' in text.lower():
+        past_medical_history = re.findall(r'Past Medical History:\s*\n{0,2}(.*?)\n(?:Social History:|___ History:\n___\nFamily History:|Family History:|Physical Exam:|Pertinent Results:|Brief Hospital Course:)', text, re.DOTALL)
+        if not past_medical_history:
+            print(text)
+            raise ValueError("Past Medical History not found.")
+    else:
+        past_medical_history = []
     past_medical_history_text = "\n\nPast Medical History:\n" + ''.join(past_medical_history)
     return past_medical_history_text
 
 # TODO: Past surgical history:
 
 def extract_social_history(text):
-    social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    if 'social history' in text.lower():
+        social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)\n(?:Family History:|___ History:|Brief Hospital Course:)', text, re.DOTALL)
+        if not social_history:
+            social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)\nPhysical Exam:', text, re.DOTALL)
+            if not social_history:
+                social_history = re.findall(r'SOCIAL HISTORY:\s*\n{0,2}(.*?)\n(?:FAMILY HISTORY:|___ History:|Brief Hospital Course:)', text, re.DOTALL)
+                if not social_history:
+                    print(text)
+                    raise ValueError("Social History not found.")
+    else:
+        social_history = []
     social_history_text = "\n\nSocial History:\n" + ''.join(social_history)
     return social_history_text
 
 def extract_family_history(text):
-    family_history = re.findall(r'Family History:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
+    if 'family history:' in text.lower():
+        family_history = re.findall(r'Family History:\s*\n{0,2}(.*?)\n(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Brief Hospital Course:)', text, re.DOTALL)
+        if not family_history:
+            family_history = re.findall(r'FAMILY HISTORY:\s*\n{0,2}(.*?)\n(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Brief Hospital Course:)', text, re.DOTALL)
+            if not family_history:
+                print(text)
+                raise ValueError("Family History not found.")
+    else: 
+        family_history = []
     family_history_text = "\n\nFamily History:\n" + ''.join(family_history)
     return family_history_text
 
-def extract_physical_exam(text): # TODO: changer le regex
-    physical_exam = re.findall(r'Physical Exam:\s*\n{0,2}(.*?)Pertinent Results:', text, re.DOTALL)
+def extract_physical_exam(text):
+    physical_exam = re.findall(r'(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Physical ___ exam:|Family History:.*?___ Exam:)\s*\n{0,2}(.*?)Pertinent Results:', text, re.DOTALL)
+    if not physical_exam:
+        physical_exam = re.findall(r'(?:Physical Exam:|Physical .*? PE .*?:)\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
+        if not physical_exam:
+            if 'physical exam ' in text.lower().split('brief hospital course:')[0] or 'physical exam:' in text.lower().split('brief hospital course:')[0]:
+                print("==============")
+                print(text)
+                #raise ValueError("Physical Exam not found")
+            
+            physical_exam = []
+    
     physical_exam_text = "\n\nPhysical Exam:\n" + ''.join(physical_exam)
     return physical_exam_text
 
 def extract_pertinent_results(text):
-    pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
+    if 'pertinent results' in text.lower():
+        pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
+        if not pertinent_results:
+            print(text)
+            raise ValueError("Pertinent Results not found.")
+    else:
+        pertinent_results = []
     pertinent_results_text = "\n\nPertinent Results:\n" + ''.join(pertinent_results)
     return pertinent_results_text
 
 
 def extract_medication_on_admission(text):
-    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ on Admission', '[A-Za-z_]+ Medications')
-    section_ext = re.findall(rex, text, re.DOTALL)
-    if len(section_ext) > 0:
-        return "Medications on Admission:\n" + ''.join(section_ext[-1][1]) + '\n'
-    else:
-        return " "
+    medication_on_admission = re.findall(r'(?:Medications on Admission:|___ on ___:|___ on Admission:)\s*\n{0,2}(.*?)\n(?:Discharge Medications:|Discharge Disposition:)', text, re.DOTALL)
 
-def extract_discharge_medications(text): # TODO: changer le regex
-    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Medications', '[A-Za-z_]+ Disposition')
-    section_ext = re.findall(rex, text, re.DOTALL)
-    if len(section_ext) > 0:
-        return "Discharge Medications:\n" + ''.join(section_ext[-1][1]) + '\n'
+    if not medication_on_admission:
+        if "medications on admission" in text.lower() or "___ on ___:" in text.lower() or "___ on admission" in text.lower() or "medications on ___" in text.lower():
+            print(text)
+            raise ValueError("Medications on Admission not found.")
+    
+    medication_on_admission_text = "Medications on Admission:\n" + ''.join(medication_on_admission)
+    return medication_on_admission_text
+
+def extract_discharge_medications(text): 
+    if "discharge medications:" in text.lower():
+        discharge_medications = re.findall(r'Discharge Medications:\s*\n{0,2}(.*?)\n(?:Discharge Disposition:|___ Disposition:|___:)', text, re.DOTALL)
+        if not discharge_medications:
+            print(text)
+            raise ValueError("Discharge Medications not found...")
     else:
-        return " "
+        discharge_medications = []
+    discharge_medications_text = "Discharge Medications:\n" + ''.join(discharge_medications)
+    return discharge_medications_text
 
 def extract_discharge_disposition(text):
-    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Disposition', '[A-Za-z_]+ Diagnosis')
-    section_ext = re.findall(rex, text, re.DOTALL)
-    if len(section_ext) > 0:
-        return "Discharge Disposition:\n" + ''.join(section_ext[-1][1]) + '\n'
-    else:
-        return " "
+    discharge_disposition = re.findall(r'(?:Discharge Disposition:|Discharge Medications:.*?___:)\s*\n{0,2}(.*?)\n(?:Facility:|Discharge Diagnosis:)', text, re.DOTALL)
+    if not discharge_disposition:
+        if "discharge disposition:" in text.lower():
+            print(text)
+            raise ValueError("Discharge Disposition not found.")
+    discharge_disposition_text = "Discharge Disposition:\n" + ''.join(discharge_disposition)
+    return discharge_disposition_text
 
 def extract_discharge_diagnosis(text):
-    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Diagnosis', '[A-Za-z_]+ Condition')
-    section_ext = re.findall(rex, text, re.DOTALL)
-    if len(section_ext) > 0:
-        return "Discharge Diagnosis:\n" + ''.join(section_ext[-1][1]) + '\n'
-    else:
-        return " "
+    discharge_diagnosis = re.findall(r'(?:Discharge Diagnosis:|Facility:\n___\n \n___ Diagnosis:)\s*\n{0,2}(.*?)\n(?:Discharge Condition:|___ Condition:)', text, re.DOTALL)
+    if not discharge_diagnosis:
+        if 'discharge diagnosis' in text.lower():
+            print(text)
+            raise ValueError("Discharge Diagnosis not found.")
+    discharge_diagnosis_text = "Discharge Diagnosis:\n" + ''.join(discharge_diagnosis)
+    return discharge_diagnosis_text
 
 def extract_discharge_condition(text):
-    rex = r'(%s?):\s*\n{0,2}(.+?)\s*(\n\s*){1,10}(%s):\n' % ('[A-Za-z_]+ Condition', '[A-Za-z_]+ Instructions')
-    section_ext = re.findall(rex, text, re.DOTALL)
-    if len(section_ext) > 0:
-        return "Discharge Condition:\n" + ''.join(section_ext[-1][1]) + '\n'
-    else:
-        return " "
+    discharge_condition = re.findall(r'(?:Discharge Condition:|___ Condition:)\s*\n{0,2}(.*?)\nFollowup Instructions:', text, re.DOTALL)
+    if not discharge_condition:
+        print(text)
+        raise ValueError("Discharge Condition not found.")
+    discharge_condition_text = "Discharge Condition:\n" + ''.join(discharge_condition)
+    return discharge_condition_text
 
 feature_to_header = {
     'sex': 'Sex',
