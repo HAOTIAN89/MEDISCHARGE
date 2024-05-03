@@ -414,9 +414,11 @@ section_to_starts = {
                                 '___ on ___:'],
 
     'discharge_medications' : ['Discharge Medications:',
-                                'Discharge medications:'],
+                                'Discharge medications:',
+                                '___ Medications:'],
 
-    'discharge_disposition' : ['Discharge Disposition:'],
+    'discharge_disposition' : ['Discharge Disposition:',
+                               '___ Disposition:'],
 
     'facility' : ['Facility:'],
 
@@ -428,7 +430,8 @@ section_to_starts = {
                              '___ Condition:',
                              'Discharge ___:'],
 
-    'end' : ['Followup Instructions:']
+    'end' : ['Followup Instructions:',
+             ' Followup Instructions:',]
 }
 
 section_to_next_section = {
@@ -480,7 +483,8 @@ section_to_next_section = {
     'family_history' : ['physical_exam',
                         'pertinent_results',
                         'medication_on_admission',
-                        'discharge_medications'],
+                        'discharge_medications',
+                        'discharge_disposition'],
     
     'physical_exam' : ['pertinent_results',
                         'medication_on_admission',
@@ -535,6 +539,7 @@ def extract_section(text: str, section: str, start_idx: int) -> str:
     next_sections = section_to_next_section[section]
     section_text = ''
     extracted_until = start_idx
+    section_list_text = []
     for s in starts:
         for ns in next_sections:
             next_headers = section_to_starts[ns]
@@ -543,10 +548,6 @@ def extract_section(text: str, section: str, start_idx: int) -> str:
                 #print(s)
                 #print(e)
                 current_list = re.findall(rf'(?:\s{{2}}|\n+){s}(.*?)\n+{e}', text[start_idx:], re.DOTALL)
-
-                if len(current_list) > 1:
-                    print("yeah")
-                    print(current_list)
                 
                 if current_list:
                     current = current_list[0]
@@ -556,6 +557,7 @@ def extract_section(text: str, section: str, start_idx: int) -> str:
                         shortest = current
                     
             section_text = shortest
+            section_list_text = current_list
             #print(f"[s]{section_text}[e]")
             if section_text:
                 break
@@ -623,7 +625,7 @@ def extract_section(text: str, section: str, start_idx: int) -> str:
 
 
 
-    return (f"{feature_to_header[section]}:\n{section_text.strip()}\n\n", extracted_until)
+    return (f"{feature_to_header[section]}:\n{' '.join(section_list_text).strip()}\n\n", extracted_until)
 
 
 
