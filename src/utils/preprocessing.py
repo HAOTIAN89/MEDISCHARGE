@@ -41,7 +41,6 @@ def save_data(data: pd.DataFrame, file_path: str):
     else:
         raise ValueError(f"File type not supported. Supported types: csv, json, jsonl, gzip")
 
-
 def build_combined_discharge(discharges: pd.DataFrame, discharges_target: pd.DataFrame) -> pd.DataFrame:
     combined_discharge_train_df = pd.merge(discharges[['hadm_id', 'text']],
                                 discharges_target[['hadm_id', 'discharge_instructions', 'brief_hospital_course']],
@@ -102,236 +101,10 @@ def remove_bhc_di(raw_discharge: str, bhc:str, di:str, mode:str='bhc'):
 
     return clean_discharge
 
-def remove_consecutive_duplicates(text):
-    lines = text.split('\n')
-    cleaned_lines = [lines[0]]
-
-    for line in lines[1:]:
-        if line.strip().lower() != cleaned_lines[-1].strip().lower():
-            cleaned_lines.append(line)
-
-    return '\n'.join(cleaned_lines)
-
-def get_bhc_input(combined_discharges: pd.DataFrame, mode ='bhc') -> pd.DataFrame:
+def get_original_bhc_di_input(combined_discharges: pd.DataFrame, mode ='bhc') -> pd.DataFrame:
     original_bhc_input = combined_discharges.progress_apply(lambda x: remove_bhc_di(x['text'], x['brief_hospital_course'], x['discharge_instructions'], mode=mode), axis=1)
     
     return original_bhc_input
-
-
-def extract_sex(text):
-    sex = re.findall(r'Sex:\s*\n{0,2}(.*?)\n(?:Service:|___:.*?\nAllergies:)', text, re.DOTALL)
-    if not sex:
-        print(text)
-        raise ValueError("Sex not found")
-    sex_text = "Sex:   " + ''.join(sex).strip() + '\n'
-    return sex_text
-
-def extract_service(text):
-    service = re.findall(r'(?:Service:|Sex:.*?\n \n___:)\s*\n{0,2}(.*?)\nAllergies:', text, re.DOTALL)
-    if not service:
-        print(text)
-        raise ValueError("Service not found")
-    service_text = "\nService: " + ''.join(service)
-    return service_text
-
-def extract_allergies(text):
-    allergies = re.findall(r'Allergies:\s*\n{0,2}(.*?)\n(?:Attending:|___.\n \nChief Complaint:|___\n \nChief Complaint:|___ Complaint:)', text, re.DOTALL)
-    if not allergies:
-        print(text)
-        raise ValueError("Allergies not found.")
-    allergies_text = "\nAllergies: \n" + ''.join(allergies)
-    return allergies_text
-
-def extract_chief_complaint(text):
-    if 'Complaint' in text:
-        chief_complaint = re.findall(r'Complaint:\s*\n{0,2}(.*?)\n(?:Major Surgical or Invasive Procedure:|___ Surgical or Invasive Procedure:|Major ___ or Invasive Procedure:|___ or Invasive Procedure:|Major Surgical ___ Invasive Procedure:|History of Present Illness:)', text, re.DOTALL) 
-        
-        if not chief_complaint:
-            if "chief complaint" in text.lower():
-                print(text)
-                raise ValueError("Chief Complaint not found.")
-    else:
-        chief_complaint = []
-    #chief_complaint = re.findall(r'Chief Complaint:\s*\n{0,2}(.*?)(?=\n\s*\n{0,2}\s*[A-Z_]+[^\n:]+:\n)', text, re.DOTALL)
-    chief_complaint_text = "\nChief Complaint:\n" + ''.join(chief_complaint)
-    return chief_complaint_text
-
-def extract_major_surgical_procedures(text):
-    major_surgical_procedures = re.findall(r'(?:Major Surgical or Invasive Procedure:|___ Surgical or Invasive Procedure:|Major Surgical ___ Invasive Procedure:)\s*\n{0,2}(.*?)\nHistory of Present Illness:', text, re.DOTALL)
-    if not major_surgical_procedures:
-        major_surgical_procedures = re.findall(r'Major Surgical or Invasive Procedure:\s*\n{0,2}(.*?)\n(?:Pertinent Results:|Brief Hospital Course:)', text, re.DOTALL)
-        if not major_surgical_procedures:
-            if "major surgical procedures" in text.lower():
-                print(text)
-                raise ValueError("Major Surgical Procedures not found.")
-    major_surgical_procedures_text = "\nMajor Surgical or Invasive Procedure:\n" + ''.join(major_surgical_procedures)
-    return major_surgical_procedures_text
-
-def extract_history_of_present_illness(text): # TODO: changer le regex
-    history_of_present_illness = re.findall(r'(?:History of Present Illness:|HISTORY OF PRESENT ILLNESS:)\s*\n{0,2}(.*?)\n(?:REVIEW OF SYSTEMS:|Review of sytems:|Social History:|Family History:|Physical Exam:|Brief Hospital Course:)', text, re.DOTALL)
-    if not history_of_present_illness:
-        history_of_present_illness = re.findall(r'History of Present Illness:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)
-    #if not found, try with capital letters
-    if not history_of_present_illness:
-        history_of_present_illness = re.findall(r'HISTORY OF THE PRESENTING ILLNESS:\s*\n{0,2}(.*?)\nREVIEW OF SYSTEMS:', text, re.DOTALL)
-    
-    if not history_of_present_illness:
-        if "history of present illness" in text.lower() or "history of the presenting illness" in text.lower():
-            print(text)
-            raise ValueError("history of present_illness not found")
-
-    history_of_present_illness_text = "\n\nHistory of Present Illness:\n" + ''.join(history_of_present_illness)
-    return history_of_present_illness_text
-
-def extract_review_of_systems(text):
-    if 'REVIEW OF SYSTEMS' in text:
-        review_of_systems = re.findall(r'REVIEW OF SYSTEMS:?\s*\n{0,2}(.*?)\n(?:Past Medical History:|Social History:|PAST MEDICAL HISTORY|MEDICATIONS:|Medications on Admission:)', text, re.DOTALL)
-
-        if not review_of_systems:
-            print(text)
-            raise ValueError("Review of Systems not found.")
-    elif 'review of systems:' in text.lower():
-        review_of_systems = re.findall(r'Review of Systems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
-        if not review_of_systems:
-            review_of_systems = re.findall(r'Review of systems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
-            if not review_of_systems:
-                review_of_systems = re.findall(r'Review of sytems:\s*\n{0,2}(.*?)\nPast Medical History:', text, re.DOTALL)  
-                if not review_of_systems:
-                    print('')
-                    #print(text)
-                    #raise ValueError("Review of Systems not found.")
-    else:
-        review_of_systems = []
-
-    review_of_systems_text = "\n\nReview of Systems:\n" + ''.join(review_of_systems)
-  
-    return review_of_systems_text
-
-def extract_past_medical_history(text): # TODO: changer le regex
-    if 'past medical history:' in text.lower():
-        past_medical_history = re.findall(r'(?:Past Medical History:|PAST MEDICAL HISTORY:|Past medical history:)\s*\n{0,2}(.*?)\n(?:Social History:|___ History:\n___\nFamily History:|Family History:|Physical Exam:|Pertinent Results:|Brief Hospital Course:|Discharge Condition:)', text, re.DOTALL)
-        if not past_medical_history:
-            print(text)
-            raise ValueError("Past Medical History not found.")
-    else:
-        past_medical_history = []
-    past_medical_history_text = "\n\nPast Medical History:\n" + ''.join(past_medical_history)
-    return past_medical_history_text
-
-# TODO: Past surgical history:
-
-def extract_social_history(text):
-    social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)\n(?:Family History:|___ History:|Medications on Admission:)', text, re.DOTALL)
-    if not social_history:
-        social_history = re.findall(r'Social History:\s*\n{0,2}(.*?)\nPhysical Exam:', text, re.DOTALL)
-        if not social_history:
-            social_history = re.findall(r'SOCIAL HISTORY:\s*\n{0,2}(.*?)\n(?:FAMILY HISTORY:|___ History:|Brief Hospital Course:)', text, re.DOTALL)
-            if not social_history:
-                if 'social history:' in text.lower():
-                    print(text)
-                    raise ValueError("Social History not found.")
-    social_history_text = "\n\nSocial History:\n" + ''.join(social_history)
-    return social_history_text
-
-def extract_family_history(text):
-    if 'family history:' in text.lower():
-        family_history = re.findall(r'(?:Family History:|Family history:)\s*\n{0,2}(.*?)\n(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Pertinent Results:|Medications on Admission:)', text, re.DOTALL)
-        if not family_history:
-            family_history = re.findall(r'FAMILY HISTORY:\s*\n{0,2}(.*?)\n(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Brief Hospital Course:)', text, re.DOTALL)
-            if not family_history:
-                print(text)
-                raise ValueError("Family History not found.")
-    else: 
-        family_history = []
-    family_history_text = "\n\nFamily History:\n" + ''.join(family_history)
-    return family_history_text
-
-def extract_physical_exam(text):
-    physical_exam = re.findall(r'(?:Physical Exam:|Physical .*? PE .*?:|Physical ___:|Physical ___ exam:|Family History:.*?___ Exam:)\s*\n{0,2}(.*?)Pertinent Results:', text, re.DOTALL)
-    if not physical_exam:
-        physical_exam = re.findall(r'(?:Physical Exam:|Physical .*? PE .*?:)\s*\n{0,2}(.*?)Brief Hospital Course:', text, re.DOTALL)
-        if not physical_exam:
-            if 'physical exam ' in text.lower().split('brief hospital course:')[0] or 'physical exam:' in text.lower().split('brief hospital course:')[0]:
-                print('')
-                #print("==============")
-                #print(text)
-                #raise ValueError("Physical Exam not found")
-            
-            physical_exam = []
-    
-    physical_exam_text = "\n\nPhysical Exam:\n" + ''.join(physical_exam)
-    return physical_exam_text
-
-def extract_pertinent_results(text):
-    if 'pertinent results' in text.lower():
-        pertinent_results = re.findall(r'Pertinent Results:\s*\n{0,2}(.*?)(?:Medications on Admission:|Medications on admission:|___ on Admission:|___ on ___:|Discharge Medications:|Discharge Disposition:)', text, re.DOTALL)
-        if not pertinent_results:
-            print(text)
-            raise ValueError("Pertinent Results not found.")
-    else:
-        pertinent_results = []
-    pertinent_results_text = "\n\nPertinent Results:\n" + ''.join(pertinent_results)
-    return pertinent_results_text
-
-
-def extract_medication_on_admission(text):
-    medication_on_admission = re.findall(r'(?:Medications on Admission:|Medications on admission:|___ on Admission:|___ on ___:)\s*\n{0,2}(.*?)\n(?:Discharge Medications:|Discharge Disposition:|___ Medications:|___:|Social History:)', text, re.DOTALL)
-
-    if not medication_on_admission:
-        if "medications on admission" in text.lower() or "___ on ___:" in text.lower() or "___ on admission:" in text.lower() or "medications on ___:" in text.lower():
-            print(text)
-            raise ValueError("Medications on Admission not found.")
-
-    medication_on_admission_text = "Medications on Admission:\n" + ''.join(medication_on_admission)
-    return medication_on_admission_text
-
-def extract_discharge_medications(text): 
-    if "discharge medications:" in text.lower():
-        discharge_medications = re.findall(r'(?:Discharge medications:|Discharge Medications:)\s*\n{0,2}(.*?)\n(?:Discharge Disposition:|Medications on Admission:|___ Disposition:|Discharge ___:\n.*?\n \nDischarge Diagnosis:|___:\n.*?\n \nFacility:|___:\n.*?\n \nDischarge Instructions:|Facility:|.*?___ischarge Disposition:|___:\n.*?\n \nDischarge Diagnosis:)', text, re.DOTALL)
-        if not discharge_medications:
-            print(text)
-            raise ValueError("Discharge Medications not found...")
-    else:
-        discharge_medications = []
-    discharge_medications_text = "Discharge Medications:\n" + ''.join(discharge_medications)
-    return discharge_medications_text
-
-def extract_discharge_disposition(text):
-    discharge_disposition = re.findall(r'(?:Discharge Disposition:|Discharge Medications:.*?___:)\s*\n{0,2}(.*?)\n(?:Facility:|Discharge Diagnosis:)', text, re.DOTALL)
-    if not discharge_disposition:
-        if "discharge disposition:" in text.lower():
-            print(text)
-            raise ValueError("Discharge Disposition not found.")
-    discharge_disposition_text = "Discharge Disposition:\n" + ''.join(discharge_disposition)
-    return discharge_disposition_text
-
-def extract_facility(text):
-    facility = re.findall(r'Facility:\s*\n{0,2}(.*?)\n(?:Discharge Diagnosis:|___ Diagnosis:)', text, re.DOTALL)
-    if not facility:
-        if 'facility' in text.lower():
-            print(text)
-            raise ValueError("Facility not found.")
-    facility_text = "Facility:\n" + ''.join(facility)
-    return facility_text
-
-def extract_discharge_diagnosis(text):
-    discharge_diagnosis = re.findall(r'(?:Discharge Diagnosis:|Facility:\n___\n \n___ Diagnosis:)\s*\n{0,2}(.*?)\n(?:Discharge Condition:|___ Condition:|Discharge Instructions:)', text, re.DOTALL)
-    if not discharge_diagnosis:
-        if 'discharge diagnosis' in text.lower():
-            print(text)
-            raise ValueError("Discharge Diagnosis not found.")
-    discharge_diagnosis_text = "Discharge Diagnosis:\n" + ''.join(discharge_diagnosis)
-    return discharge_diagnosis_text
-
-def extract_discharge_condition(text):
-    discharge_condition = re.findall(r'(?:Discharge Condition:|___ Condition:)\s*\n{0,2}(.*?)\n(?:Facility:|Discharge Instructions:|Followup Instructions:)', text, re.DOTALL)
-    if not discharge_condition:
-        if "discharge condition" in text.lower():
-            print(text)
-            raise ValueError("Discharge Condition not found.")
-
-    discharge_condition_text = "Discharge Condition:\n" + ''.join(discharge_condition)
-    return discharge_condition_text
 
 feature_to_header = {
     'sex': 'Sex',
@@ -353,93 +126,98 @@ feature_to_header = {
     'discharge_condition': 'Discharge Condition'
 }
 
-feature_to_function = {
-    'sex': extract_sex, #important
-    'service': extract_service, 
-    'allergies': extract_allergies, 
-    'chief_complaint': extract_chief_complaint, #important
-    'major_surgical_procedures': extract_major_surgical_procedures,
-    'history_of_present_illness': extract_history_of_present_illness, #important
-    'past_medical_history': extract_past_medical_history, 
-    'social_history': extract_social_history, 
-    'family_history': extract_family_history, 
-    'physical_exam': extract_physical_exam, #maybe remove
-    'pertinent_results': extract_pertinent_results,#maybe remove 
-    'medication_on_admission': extract_medication_on_admission,
-    'discharge_medications': extract_discharge_medications,
-    'discharge_disposition': extract_discharge_disposition,
-    'discharge_diagnosis': extract_discharge_diagnosis,
-    'discharge_condition': extract_discharge_condition
-}
-
 section_to_starts = {
     'sex' : ['Sex:'],
 
-    'service' : ['Service:',
-                 'Sex:.*?\n \n___:'],
+    'service' : ['Service:'],
 
     'allergies' : ['Allergies:'],
 
-    'chief_complaint' : ['Attending:.*?\n \nChief Complaint:','Attending:.*?\n \n___ Complaint:'],
+    'chief_complaint' : ['Attending:.*?\n \nChief Complaint:',
+                         'Attending:.*?\n \n___ Complaint:',
+                         '___ Complaint:'],
 
     'major_surgical_procedures' : ['Major Surgical or Invasive Procedure:',
                                    '___ Surgical or Invasive Procedure:',
-                                   'Major Surgical ___ Invasive Procedure:'],
+                                   'Major Surgical ___ Invasive Procedure:',
+                                   'Major ___ or Invasive Procedure:'],
 
     'history_of_present_illness' : ['History of Present Illness:',
                                     'HISTORY OF PRESENT ILLNESS:',
-                                    'HISTORY OF THE PRESENTING ILLNESS:'],
+                                    'HISTORY OF THE PRESENTING ILLNESS:',
+                                    '___ of Present Illness:',
+                                    'HPI:'],
 
     'past_medical_history' : ['Past Medical History:'],
 
     'social_history' : ['Social History:',
                         '___ History:'],
 
-    'family_history' : ['Family History:',
-                        'Family history:',],
+    'family_history' : ['Family history:',
+                        'Family History:'],
 
-    'physical_exam' : ['Physical Exam:',
-                        'Physical ___:',
+    'physical_exam' : [ 'Physical ___:',
+                        'Physical Exam:',
                         'Physical ___ exam:',
                         'Physical ___ Exam:',
-                        '___ Exam:'
+                        '___ Exam:',
                         'Physical ___ PE ___:',
-                        'Physical ___ physical exam\nPhysical exam:'],
+                        'Physical ___ physical exam\nPhysical exam:',
+                        'Physical ___ Physical Exam\nExam:',
+                        'Physical ___ Physical Exam:',
+                        'Physical ___ physical exam:',
+                        'Physical ___ PHYSICAL EXAM:',
+                        'Physical ___ PE',
+                        'Physical ___ PE:'
+                        ],
 
     'pertinent_results' : ['Pertinent Results:'],
 
     'medication_on_admission' : ['Medications on Admission:',
                                 'Medications on admission:',
+                                '___ on admission:',
                                 '___ on Admission:',
                                 '___ on ___:'],
 
     'discharge_medications' : ['Discharge Medications:',
                                 'Discharge medications:',
-                                '___ Medications:'],
+                                '___ Medications:',
+                                '___ medications:'],
 
     'discharge_disposition' : ['Discharge Disposition:',
-                               '___ Disposition:'],
+                               '___ Disposition:',
+                               'Discharge disposition:',
+                               '___ disposition:'],
 
     'facility' : ['Facility:'],
 
     'discharge_diagnosis' : ['Discharge Diagnosis:',
                              '___ Diagnosis:',
-                             'Facility:___\n \n___:'],
+                             '___ischarge Diagnosis:',
+                             '___:'],
 
     'discharge_condition' : ['Discharge Condition:',
                              '___ Condition:',
-                             'Discharge ___:'],
+                             'Discharge ___:',
+                             '___:',],
 
     'end' : ['Followup Instructions:',
-             ' Followup Instructions:',]
+             ' Followup Instructions:']
 }
 
 section_to_next_section = {
-    'sex' : ['service'],
+    'sex' : ['service','allergies'],
     
     'service' : ['allergies'],
     
-    'allergies' : ['chief_complaint'],
+    'allergies' : ['chief_complaint',
+                   'major_surgical_procedures',
+                   'history_of_present_illness',
+                   'past_medical_history',
+                    'social_history',
+                    'family_history',
+                    'physical_exam',
+                   'pertinent_results'],
     
     'chief_complaint' : ['major_surgical_procedures',
                          'history_of_present_illness'],
@@ -521,150 +299,109 @@ section_to_next_section = {
 starts_to_section = {start: section for section, starts in section_to_starts.items() for start in starts}
 
 #concat all starts and ends keys into one set
-all_starts_and_ends = set([start for starts in section_to_starts.values() for start in starts])
+all_starts = [start for starts in section_to_starts.values() for start in starts]
 
-def extract_section(text: str, section: str, start_idx: int) -> str:
+def extract_section(text: str, section: str, start_idx: int, start_alias: str) -> str:
     """
     Extracts the section from the text.
     
     Args:
         text (str): input text
         section (str): section to extract
+        start_idx (int): index where to start extracting
+        start_alias (str): alias of the start of the section
     
     Returns:
         (str) extracted section
     """
+    if start_alias:
+        if start_alias not in section_to_starts[section]:
+            return ("None", start_idx, start_alias)#, {})
+        starts = [start_alias]
+    else:
+        starts = section_to_starts[section]
     
-    starts = section_to_starts[section]
     next_sections = section_to_next_section[section]
     section_text = ''
     extracted_until = start_idx
-    section_list_text = []
+    next_start_alias = ''
+    #sub_sections = {}
     for s in starts:
         for ns in next_sections:
             next_headers = section_to_starts[ns]
             shortest = ''
+            next_start_alias_of_shortest = ''
             for e in next_headers:
-                #print(s)
-                #print(e)
-                current_list = re.findall(rf'(?:\s{{2}}|\n+){s}(.*?)\n+{e}', text[start_idx:], re.DOTALL)
-                
+                current_list = re.findall(rf'(?:\s{{2,}}|\n+){s}(.*?)\n+{e}', text[start_idx:], re.DOTALL)
+
                 if current_list:
                     current = current_list[0]
                     if current == '':
                         current = '\n'
                     if len(current) < len(shortest) or not shortest:
                         shortest = current
+                        next_start_alias_of_shortest = e
                     
             section_text = shortest
-            section_list_text = current_list
-            #print(f"[s]{section_text}[e]")
+            next_start_alias = next_start_alias_of_shortest
             if section_text:
                 break
+    
+
+        '''aliases_in_section = [alias_ for alias_ in all_starts if (alias_ in section_text and alias_ not in section_to_starts[section])]
+        if aliases_in_section:
+            start_alias_ = aliases_in_section[0]
+            start_idx_ = section_text.find(start_alias_)
+            for section_ in section_to_next_section.keys():
+                    sub_section, start_idx_, start_alias_, _  = extract_section(section_text, section_, start_idx_, start_alias_)
+                    if sub_section not in ['___', 'None', 'as above', 'as bellow', '']:
+                        sub_sections[section_] = sub_section'''
         
         if section_text:
-
-            if section_text not in ['\n', ' ___', ' ','\n ','\n\n ']:
+            if section_text.replace('_', '').strip():
                 indx = text[start_idx:].find(section_text)
                 if indx == -1:
                     raise ValueError(f"Section {section} not found back")
                 extracted_until = start_idx + indx + len(section_text)
-            break
+                break
+    
+    section_text = section_text.strip()
 
-        
     if not section_text:
-        for s in starts:
-            if s in text:
-                #get the line containing the start
-                line = re.findall(rf'.*{s.lower()}.*', text.lower())[0]
-                if line in ['discharge physical exam:'] or line != s.lower(): #special cases
-                    continue
-                if section == 'facility':
-                    #print('=====================')
-                    #print(text)
-                    #print('=====================')
-                    #print(s)
-                    #print('=====================')
-                    #print(text[start_idx:])
-                    continue
-                print('=========truncated_text============')
-                print(text[start_idx:])
-                print('=====================')
-                print(text)
-                raise ValueError(f"Section {section} not found.")
+        section_text = 'None'
+    
+    return section_text.strip(), extracted_until, next_start_alias #,sub_sections
 
-
-
-    for alias in all_starts_and_ends:
-        if alias in section_text and starts_to_section[alias] != section:
-            #if lined appeared before the section_text, just pass:
-            #line contaning the alias
-            line = re.findall(rf'.*{alias}.*', section_text)[0]
-            split_ = text.split(section_text)
-            text_before = split_[0]
-            if len(split_) > 1:
-                text_after = split_[1]
-            else:
-                text_after = ''
-                #print("Warning text after")
-                #print(text)
-                #print('=====================')
-                #print(section_text)
-
-
-
-            if any(alias_ in text_before for alias_ in section_to_starts[starts_to_section[alias]]) or alias != line or any(alias_ in text_after for alias_ in section_to_starts[starts_to_section[alias]]):
-                #print(line)
-                continue
-                
-
-            print(section_text)
-            print('==============all text==============')
-            print(text)
-            raise ValueError(f"Alias {alias} found in section {section}.")
-
-
-
-    return (f"{feature_to_header[section]}:\n{' '.join(section_list_text).strip()}\n\n", extracted_until)
-
-
-
-def extract_one_clean_input(text: str, features_to_include: list) -> str:
+def extract_one_all_input_features(text: str) -> str:
     """
         Extracts the features from the text and returns a clean input, blanking the features not included.
         
         Args:
             text (str): input text
-            features_to_include (list): list of features to include in the clean input
             
         Returns:
-            (str) clean input
+            extracted_features dict: dictionary with the extracted features
     """
-    
-    extracted_features = []
-    for feature in feature_to_function.keys():
-        if feature in features_to_include:
-            extracted_features.append(feature_to_function[feature](text) + '\n')
-            continue
-        
-        '''# BLANK SECTION with header if feature not included
-            extracted_features.append('\n' + feature_to_header[feature] + ': \n')'''
-        
-    return ''.join(extracted_features)
-            
-
-def extract_clean_inputs(combined_discharges: pd.DataFrame, features_to_include: list):
-    for feature in features_to_include:
-        if feature not in feature_to_function:
-            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(feature_to_function.keys())}.")  
-        
-    if isinstance(combined_discharges['text'], str): 
-        extracted_features = extract_one_clean_input(combined_discharges['text'], features_to_include=features_to_include)      
-    else:
-        extracted_features = combined_discharges['text'].progress_apply(extract_one_clean_input, features_to_include=features_to_include)
+    #sub_sections = {}
+    extracted_features = {section : '' for section in section_to_next_section.keys()}
+    start_idx = 0
+    start_alias = None
+    for section in section_to_next_section.keys():
+        extracted_features[section], start_idx, start_alias = extract_section(text, section, start_idx, start_alias)
 
     return extracted_features
+            
+def extract_all_input_features(combined_discharges: pd.DataFrame) -> pd.DataFrame:
+ 
+    if isinstance(combined_discharges['text'], str): 
+        extracted_features = extract_one_all_input_features(remove_bhc_di(combined_discharges['text']))      
+    else:
+        print("Removing BHC and DI from the discharge")
+        clean_discharges = get_original_bhc_di_input(combined_discharges)
+        print("Extracting features")
+        extracted_features = clean_discharges.progress_apply(extract_one_all_input_features)
 
+    return pd.DataFrame(extracted_features.tolist())
 
 def remove_underscores(text):
     """
@@ -711,14 +448,14 @@ def lowercase_first_letter(text) -> str:
     return processed_text
 
 def remove_unecessary_tokens(text):
-    return lowercase_first_letter(treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text)))))
-
+    return treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text))))
 
 bhc_strategy = [
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'social_history', 'family_history' ,'physical_exam', 'pertinent_results'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'physical_exam', 'pertinent_results'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results', 'past_medical_history'],
+    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness',  'past_medical_history', 'pertinent_results',],
     ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history'],
@@ -737,8 +474,7 @@ bhc_strategy = [
     ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam'],
     ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'past_medical_history'],
-]
+    ['sex', 'service', 'allergies', 'chief_complaint', 'past_medical_history']]
 
 di_strategy = [["medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"], 
             ["discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
@@ -753,27 +489,50 @@ di_strategy = [["medication_on_admission", "discharge_medications", "discharge_d
             ["brief_hospital_course"]
             ]
 
-def count_tokens_per_section(df, sections):
+def format_section(text, section):
     """
-    Counts the number of tokens in each section of the text.
-    
-    Args:
-        text (str): input text
-        sections (list): list of sections to count tokens
-    
-    Returns:
-        (dict) dictionary with the number of tokens per section
+    Format the section to be extracted.
     """
-    
-    for section in sections:
-        df[section] = extract_clean_inputs(df, features_to_include=[section]) \
-            .progress_apply(remove_unecessary_tokens)
-        
-        df[section + '_tokens'] = df[section].progress_apply(get_token_count)
-            
-    return df
 
-def select_strategy(df, mode, max_length=1548):
+    test_clean_text = text[:]
+
+    for to_remove in ["_"]:
+        test_clean_text = test_clean_text.replace(to_remove, "")
+    
+    if not test_clean_text.strip():
+        text = "None"
+    
+    return f"{feature_to_header[section]}:\n{text}\n"
+    
+
+def extract_clean_sections_and_count_tokens(raw_combined_df, sections_to_consider):
+    """
+    Tokenizes into sections and counts the number of tokens in each section of the text.
+
+    """
+
+    for feature in sections_to_consider:
+        if feature not in section_to_next_section.keys():
+            raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(sections_to_consider.keys())}.") 
+
+    all_features = extract_all_input_features(raw_combined_df)
+    
+    for section in sections_to_consider:
+        print(f"Formating and cleaning {section} section")
+        raw_combined_df[section] = all_features[section].progress_apply(format_section, section = section).progress_apply(remove_unecessary_tokens)
+        
+        print(f"Counting tokens in {section} section")
+        raw_combined_df[section + '_tokens'] = raw_combined_df[section].progress_apply(get_token_count)
+            
+    return raw_combined_df
+
+def construct_final_input(row, features_to_consider, features_selected):
+
+    return '\n'.join([
+                row[section] if section in features_selected else '\n' + feature_to_header[section] + ':\nNone\n' for section in features_to_consider
+            ])
+
+def select_strategy(combined_df_with_sections, mode, max_length=1548):
     """
     Selects the strategy for the preprocessing based on the mode.
     
@@ -787,22 +546,24 @@ def select_strategy(df, mode, max_length=1548):
     
     if mode == 'BHC':
         strategies = bhc_strategy
+        sections_to_consider = bhc_strategy[0]
     elif mode == 'DI':
         strategies = di_strategy
+        sections_to_consider = di_strategy[0]
     else:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
     outputs = []
     too_long = 0
-    for index, row in df.iterrows():
+    for _, row in tqdm(combined_df_with_sections.iterrows(), desc='Selecting strategy', total=len(combined_df_with_sections)):
         total_tokens = 0
         for select in strategies:
             total_tokens = 0
-            for section in feature_to_header:
+            for section in sections_to_consider:
                 if section in select:
                     total_tokens += row[section + "_tokens"]
                 else:
-                    total_tokens += get_token_count('\n' + feature_to_header[section] + ': \n')
+                    total_tokens += get_token_count('\n' + feature_to_header[section] + ':\nNone\n')
             if total_tokens < max_length: 
                 final_select = select
                 break
@@ -811,17 +572,13 @@ def select_strategy(df, mode, max_length=1548):
                 print("no suitable strategy found")
         
         if final_select == strategies[-1] and total_tokens >= max_length:
-            output = '\n'.join([
-                row[section] if section in final_select else '\n' + feature_to_header[section] + ': \n' for section in feature_to_header
-            ])[0:max_length]
+            output = construct_final_input(row, sections_to_consider, final_select)[0:max_length]
             too_long += 1
         else:
-            output = '\n'.join([
-                row[section] if section in final_select else '\n' + feature_to_header[section] + ': \n' for section in feature_to_header
-            ])
+            output = construct_final_input(row, sections_to_consider, final_select)
         outputs.append(output)
         
-    print(f'Number of rows that exceed the maximum length: {too_long}/{len(df)}')
+    print(f'Number of rows that exceed the maximum length: {too_long}/{len(combined_df_with_sections)}')
     return outputs
 
 
@@ -835,11 +592,15 @@ if __name__ == "__main__":
     parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
     parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', default=None)
     parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', default=None)
+    parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', default='sections')
 
     args = parser.parse_args()
 
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
+    
+    if args.truncation_strategy not in ['sections', 'samples']:
+        raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
     discharges_df = load_data(args.discharge_path)
     discharges_target_df = load_data(args.discharge_target_path)
@@ -862,8 +623,7 @@ if __name__ == "__main__":
         os.makedirs(output_dir, exist_ok=True)
 
     if args.mode == 'BHC':
-        original_bhc_input = get_bhc_input(combined_discharges)
-        features_to_include = [
+        features_to_consider = [
                 'sex',
                 'service',
                 'allergies',
@@ -876,20 +636,34 @@ if __name__ == "__main__":
                 'pertinent_results',
                 'physical_exam',
             ]
-        combined_discharges = count_tokens_per_section(combined_discharges, sections= [
-            feature for feature in features_to_include if feature not in features_to_exclude
-        ])
         
-        processed_bhc_input = select_strategy(combined_discharges, mode='BHC', max_length=args.max_tokens)
-        processed_bhc_input = pd.Series(processed_bhc_input)
+        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
+        if args.truncation_strategy == 'sections':
+            processed_bhc_input = select_strategy(combined_discharges_with_section_and_counts, mode='BHC', max_length=args.max_tokens)
+            
+        
+        elif args.truncation_strategy == 'samples':
+            combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
+                    .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
+            combined_discharges_with_section_and_counts['final_input_tokens'] = \
+                        combined_discharges_with_section_and_counts['final_input'].progress_apply(get_token_count)
+            
+            combined_discharges_with_section_and_counts['total_tokens']\
+                     = combined_discharges_with_section_and_counts['final_input_tokens'] \
+                        + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
+            
+            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens]
 
-        clean_bhc_input = processed_bhc_input.progress_apply(remove_unecessary_tokens)
-        in_out['prompt'] = clean_bhc_input
+            processed_bhc_input = filtered_combined_discharges['final_input']
+            print(f"{processed_bhc_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
+
+        processed_bhc_input = pd.Series(processed_bhc_input)
+        in_out['prompt'] = processed_bhc_input
         in_out['reference'] = combined_discharges['brief_hospital_course']
     
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
-        features_to_include = [
+        features_to_consider = [
                 'medication_on_admission',
                 'discharge_medications',
                 'discharge_disposition',
@@ -900,22 +674,35 @@ if __name__ == "__main__":
         if args.generated_bhc_path:
             generated_bhc = load_data(args.generated_bhc_path)
             
-            combined_discharges['brief_hospital_course'] = 'brief hospital course: \n' + generated_bhc['generated'] + '\n'
+            combined_discharges['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
         else:
-            combined_discharges['brief_hospital_course'] = 'brief hospital course: \n' + combined_discharges['brief_hospital_course'] + '\n'
+            combined_discharges['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
             
         combined_discharges['brief_hospital_course'] = combined_discharges['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
         combined_discharges['brief_hospital_course_tokens'] = combined_discharges['brief_hospital_course'].progress_apply(get_token_count)
         
-        combined_discharges = count_tokens_per_section(combined_discharges, sections=[
-            feature for feature in features_to_include if feature not in features_to_exclude
-        ])
-            
-        processed_di_input = select_strategy(combined_discharges, mode='DI', max_length=args.max_tokens)
-        processed_di_input = pd.Series(processed_di_input)
+        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
 
-        clean_di_input = processed_di_input.progress_apply(remove_unecessary_tokens)
-        in_out['prompt'] = clean_di_input
+        if args.truncation_strategy == 'sections':
+            processed_di_input = select_strategy(combined_discharges_with_section_and_counts, mode='DI', max_length=args.max_tokens)
+        
+        elif args.truncation_strategy == 'samples':
+            combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
+                    .progress_apply(lambda x: construct_final_input(x, features_to_consider + ['brief_hospital_course'], features_to_consider), axis=1)
+            combined_discharges_with_section_and_counts['final_input_tokens'] = \
+                        combined_discharges_with_section_and_counts['final_input'].progress_apply(get_token_count)
+            
+            combined_discharges_with_section_and_counts['total_tokens']\
+                     = combined_discharges_with_section_and_counts['final_input_tokens'] \
+                        + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
+            
+            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens]
+
+            processed_di_input = filtered_combined_discharges['final_input']
+            print(f"{processed_di_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
+        
+        processed_di_input = pd.Series(processed_di_input)
+        in_out['prompt'] = processed_di_input
         in_out['reference'] = combined_discharges['discharge_instructions']
     
     if args.prompt_path:
