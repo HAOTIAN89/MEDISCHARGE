@@ -710,8 +710,8 @@ if __name__ == "__main__":
         elif args.truncation_strategy == 'samples':
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider + ['brief_hospital_course'], features_to_consider), axis=1)
-            combined_discharges_with_section_and_counts['final_input_tokens'] = \
-                        combined_discharges_with_section_and_counts['final_input'].progress_apply(get_token_count)
+            
+            combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=0) + len(feature_to_header)
             
             combined_discharges_with_section_and_counts['total_tokens']\
                      = combined_discharges_with_section_and_counts['final_input_tokens'] \
