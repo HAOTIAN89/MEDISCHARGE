@@ -5,7 +5,7 @@ from tqdm import tqdm
 import os
 import sys
 tqdm.pandas()
-
+from itertools import combinations
 
 current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(os.path.dirname(current_file_path))
@@ -450,44 +450,63 @@ def lowercase_first_letter(text) -> str:
 def remove_unecessary_tokens(text):
     return treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text))))
 
-bhc_strategy = [
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'social_history', 'family_history' ,'physical_exam', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'physical_exam', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness',  'past_medical_history', 'pertinent_results',],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'physical_exam'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'history_of_present_illness'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'physical_exam'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results', 'past_medical_history'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'physical_exam'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'pertinent_results'],
-    ['sex', 'service', 'allergies', 'chief_complaint', 'past_medical_history']]
+def generate_strategies(importance_order, removeable_groups):
+    
+    strategies = [importance_order]
+    last_removed_trial = 0 
+    for i in removeable_groups:
+        for n_removed in range(1, len(removeable_groups[i])+1):
+            for to_remove in combinations(list(reversed(removeable_groups[i])), n_removed):
+                if i > 1 and n_removed <= last_removed_trial:
+                    if to_remove in combinations(list(reversed(removeable_groups[i-1])), n_removed):
+                        continue 
+                
+                strategies.append([x for x in bhc_importance_order if x not in to_remove])
+        
+        last_removed_trial = len(removeable_groups[i])
+    
+    return strategies
 
-di_strategy = [["medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"], 
-            ["discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
-            ["medication_on_admission", "discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
-            ["discharge_medications", "brief_hospital_course"],
-            ["discharge_disposition", "discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
-            ["discharge_diagnosis", "discharge_condition", "brief_hospital_course"],
-            ['discharge_condition', "brief_hospital_course"],
-            ['discharge_diagnosis', "brief_hospital_course"],
-            ['medication_on_admission', "brief_hospital_course"],
-            ['discharge_disposition', "brief_hospital_course"],
-            ["brief_hospital_course"]
-            ]
+bhc_importance_order = ['sex',
+                        'service',
+                        'chief_complaint',
+                        'history_of_present_illness',
+                        'physical_exam',
+                        'pertinent_results',
+                        'major_surgical_procedures',
+                        'past_medical_history',
+                        'medication_on_admission',
+                        'allergies',
+                        'social_history',
+                        'family_history']
+
+removeable_bhc = {}
+
+removeable_bhc[1] = bhc_importance_order[9:]
+
+removeable_bhc[2] = ['major_surgical_procedures','past_medical_history','medication_on_admission'] + removeable_bhc[1] 
+removeable_bhc[3] = ['physical_exam', 'pertinent_results'] + removeable_bhc[2]
+removeable_bhc[4] = ['history_of_present_illness', 'chief_complaint'] + removeable_bhc[3]
+
+bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
+last_removed_trial = 0 
+
+di_importance_order = ['brief_hospital_course',
+                        'discharge_medications',
+                        'discharge_disposition',
+                        'discharge_diagnosis',
+                        'discharge_condition',
+                        'medication_on_admission']
+
+removeable_di = {}
+removeable_di[1] = di_importance_order[5:]
+
+removeable_di[2] = ['discharge_medications',
+                        'discharge_disposition',
+                        'discharge_diagnosis',
+                        'discharge_condition'] + removeable_di[1]
+
+di_strategy = generate_strategies(di_importance_order, removeable_di)
 
 def format_section(text, section):
     """
