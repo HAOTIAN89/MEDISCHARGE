@@ -424,7 +424,6 @@ def treat_weird_tokens(text) -> str:
     text = re.sub(r'-+', '-', text)
     return text
 
-
 def treat_equals(text) -> str:
     """
     When there are more than 2,3,4,5 or equals we simply remove them.
@@ -471,8 +470,8 @@ bhc_importance_order = ['sex',
                         'service',
                         'chief_complaint',
                         'history_of_present_illness',
-                        'physical_exam',
                         'pertinent_results',
+                        'physical_exam',
                         'major_surgical_procedures',
                         'past_medical_history',
                         'medication_on_admission',
@@ -485,7 +484,7 @@ removeable_bhc = {}
 removeable_bhc[1] = bhc_importance_order[9:]
 
 removeable_bhc[2] = ['major_surgical_procedures','past_medical_history','medication_on_admission'] + removeable_bhc[1] 
-removeable_bhc[3] = ['physical_exam', 'pertinent_results'] + removeable_bhc[2]
+removeable_bhc[3] = ['pertinent_results', 'physical_exam'] + removeable_bhc[2]
 removeable_bhc[4] = ['history_of_present_illness', 'chief_complaint'] + removeable_bhc[3]
 
 bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
@@ -664,6 +663,9 @@ if __name__ == "__main__":
         elif args.truncation_strategy == 'samples':
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
+            
+            combined_discharges['brief_hospital_course_tokens'] = combined_discharges['brief_hospital_course'].progress_apply(get_token_count)
+
             combined_discharges_with_section_and_counts['final_input_tokens'] = \
                         combined_discharges_with_section_and_counts['final_input'].progress_apply(get_token_count)
             
