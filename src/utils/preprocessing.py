@@ -492,8 +492,8 @@ last_removed_trial = 0
 
 di_importance_order = ['brief_hospital_course',
                         'discharge_medications',
-                        'discharge_disposition',
                         'discharge_diagnosis',
+                        'discharge_disposition',
                         'discharge_condition',
                         'medication_on_admission']
 
@@ -522,7 +522,6 @@ def format_section(text, section):
     
     return f"{feature_to_header[section]}:\n{text}\n"
     
-
 def extract_clean_sections_and_count_tokens(raw_combined_df, sections_to_consider):
     """
     Tokenizes into sections and counts the number of tokens in each section of the text.
@@ -550,7 +549,7 @@ def construct_final_input(row, features_to_consider, features_selected):
                 row[section] if section in features_selected else '\n' + feature_to_header[section] + ':\nNone\n' for section in features_to_consider
             ])
 
-def select_strategy(combined_df_with_sections, mode, max_length=1548):
+def select_strategy(combined_df_with_sections, mode, max_length, features_to_consider):
     """
     Selects the strategy for the preprocessing based on the mode.
     
@@ -562,12 +561,13 @@ def select_strategy(combined_df_with_sections, mode, max_length=1548):
         (list) list of features to include in the preprocessing
     """
     
+    sections_to_consider = features_to_consider
+    
     if mode == 'BHC':
         strategies = bhc_strategy
-        sections_to_consider = bhc_strategy[0]
     elif mode == 'DI':
         strategies = di_strategy
-        sections_to_consider = di_strategy[0]
+  
     else:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
@@ -602,15 +602,15 @@ def select_strategy(combined_df_with_sections, mode, max_length=1548):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Preprocess the data.')
-    parser.add_argument('--discharge_path', type=str, help='Path to the discharge file.')
-    parser.add_argument('--discharge_target_path', type=str, help='Path to the discharge target file.')
-    parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.')
-    parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default=None)
-    parser.add_argument('--mode', type=str, help='Whether to preprocess for BHC or DI generation')
-    parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', default='')
-    parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', default=None)
-    parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', default=None)
-    parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', default='sections')
+    parser.add_argument('--discharge_path', type=str, help='Path to the discharge file.', required = True)
+    parser.add_argument('--discharge_target_path', type=str, help='Path to the discharge target file.', required = True)
+    parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.', required = True)
+    parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default = None, required=False)
+    parser.add_argument('--mode', type=str, required = True, help='Whether to preprocess for BHC or DI generation')
+    parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', required  = False, default='')
+    parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', required = True)
+    parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', required = False, default=None)
+    parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', required = True, default='sections')
 
     args = parser.parse_args()
 
@@ -620,14 +620,12 @@ if __name__ == "__main__":
     if args.truncation_strategy not in ['sections', 'samples']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
-    discharges_df = load_data(args.discharge_path)
+    discharges_df = load_data(args.discharge_path).head(1000)
     discharges_target_df = load_data(args.discharge_target_path)
 
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
 
     in_out = pd.DataFrame()
-    
-    in_out['idx'] = combined_discharges['hadm_id']
     
     features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
 
@@ -656,32 +654,36 @@ if __name__ == "__main__":
             ]
         
         combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
+        
         if args.truncation_strategy == 'sections':
-            processed_bhc_input = select_strategy(combined_discharges_with_section_and_counts, mode='BHC', max_length=args.max_tokens)
+            processed_bhc_input = select_strategy(combined_discharges_with_section_and_counts, mode='BHC', max_length=args.max_tokens, features_to_consider=features_to_consider)
             
         
         elif args.truncation_strategy == 'samples':
+            print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
             
-            combined_discharges['brief_hospital_course_tokens'] = combined_discharges['brief_hospital_course'].progress_apply(get_token_count)
+            print("Counting token in brief hospital Course")
+            combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
 
-            combined_discharges_with_section_and_counts['final_input_tokens'] = \
-                        combined_discharges_with_section_and_counts['final_input'].progress_apply(get_token_count)
+            combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=1) + len(features_to_consider)
+
             
             combined_discharges_with_section_and_counts['total_tokens']\
                      = combined_discharges_with_section_and_counts['final_input_tokens'] \
                         + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
             
-            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens]
+            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
 
             processed_bhc_input = filtered_combined_discharges['final_input']
             print(f"{processed_bhc_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
 
         processed_bhc_input = pd.Series(processed_bhc_input)
+        in_out['idx'] = filtered_combined_discharges['hadm_id']
         in_out['prompt'] = processed_bhc_input
-        in_out['reference'] = combined_discharges['brief_hospital_course']
-    
+        in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
+
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
         features_to_consider = [
@@ -692,51 +694,64 @@ if __name__ == "__main__":
                 'discharge_condition',
             ]
         
+        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
+
+        features_to_consider = ['brief_hospital_course'] + features_to_consider
+
         if args.generated_bhc_path:
             generated_bhc = load_data(args.generated_bhc_path)
             
-            combined_discharges['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
+            combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
         else:
-            combined_discharges['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
-            
-        combined_discharges['brief_hospital_course'] = combined_discharges['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
-        combined_discharges['brief_hospital_course_tokens'] = combined_discharges['brief_hospital_course'].progress_apply(get_token_count)
+            combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
         
-        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
+        print("Cleaning BHC as input")
+        combined_discharges_with_section_and_counts['brief_hospital_course'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
+
+        print("Counting tokens in BHC")
+        combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
+        
+
 
         if args.truncation_strategy == 'sections':
-            processed_di_input = select_strategy(combined_discharges_with_section_and_counts, mode='DI', max_length=args.max_tokens)
+            processed_di_input = select_strategy(combined_discharges_with_section_and_counts, mode='DI', max_length=args.max_tokens, features_to_consider=features_to_consider)
         
         elif args.truncation_strategy == 'samples':
+            print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
-                    .progress_apply(lambda x: construct_final_input(x, features_to_consider + ['brief_hospital_course'], features_to_consider), axis=1)
+                    .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
             
-            combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=0) + len(feature_to_header)
+            print("Counting token in discharge instructions")
+            combined_discharges_with_section_and_counts['discharge_instructions_tokens'] = combined_discharges_with_section_and_counts['discharge_instructions'].progress_apply(get_token_count)
+
+            combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=1)\
+                                                             + len(feature_to_header) + 1
             
             combined_discharges_with_section_and_counts['total_tokens']\
                      = combined_discharges_with_section_and_counts['final_input_tokens'] \
-                        + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
+                        + combined_discharges_with_section_and_counts['discharge_instructions_tokens']
             
-            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens]
+            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
 
             processed_di_input = filtered_combined_discharges['final_input']
             print(f"{processed_di_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
         
         processed_di_input = pd.Series(processed_di_input)
+        in_out['idx'] = filtered_combined_discharges['hadm_id']
         in_out['prompt'] = processed_di_input
-        in_out['reference'] = combined_discharges['discharge_instructions']
+        in_out['reference'] = filtered_combined_discharges['discharge_instructions']
     
-    if args.prompt_path:
-        try:
-            prompt = load_data(args.prompt_path, type='json')            
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
 
-        assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
-        
-        in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+    try:
+        prompt = load_data(args.prompt_path, type='json')            
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
+
+    assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
+    
+    in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
    
     print(f'Number of rows: {len(in_out)}')
-    print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
+    #print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
 
     save_data(in_out, output_path)
