@@ -620,7 +620,7 @@ if __name__ == "__main__":
     if args.truncation_strategy not in ['sections', 'samples']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
-    discharges_df = load_data(args.discharge_path).head(1000)
+    discharges_df = load_data(args.discharge_path)
     discharges_target_df = load_data(args.discharge_target_path)
 
     combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
