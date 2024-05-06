@@ -699,7 +699,7 @@ if __name__ == "__main__":
 
         if args.generated_bhc_path:
             print("Using generated BHC as part of input")
-            generated_bhc = load_data(args.generated_bhc_path)
+            generated_bhc = load_data(args.generated_bhc_path, type='csv')
             
             combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
         else:
