@@ -25,7 +25,7 @@ from utils.loading_saving import load_file, save_file
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
-BATCH_SIZE = 128
+BATCH_SIZE = 1
 
 # ----------------------- Inference parameters ----------------------- #
 
@@ -44,13 +44,13 @@ GREEDY_PARAMETERS = {
 EXTENDED_PARAMETERS = {
     'best_of': 1,
     'presence_penalty': 0.0,
-    'frequency_penalty': 0.0,
+    'frequency_penalty': 1.0,
     'top_k': -1,
     'top_p': 1.0,
     'temperature': 0.0,
     'stop': EOS_TOKEN,
     'use_beam_search': False,
-    'max_tokens': 6144
+    'max_tokens': 900
 }
 
 PARAMETERS = {
@@ -59,6 +59,7 @@ PARAMETERS = {
     'medischarge-7b-DI': GREEDY_PARAMETERS,
     'medischarge-7b-BHC-extended': EXTENDED_PARAMETERS,
     'medischarge-7b-DI-extended': EXTENDED_PARAMETERS,
+    'medischarge-7B-BHC-v6-6k': GREEDY_PARAMETERS,
 }
 
 # ----------------------- Inference utilities ----------------------- #
