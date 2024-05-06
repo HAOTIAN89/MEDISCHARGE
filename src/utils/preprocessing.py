@@ -229,7 +229,6 @@ section_to_next_section = {
                                    'family_history',
                                    'physical_exam',
                                    'pertinent_results',
-                                   'medication_on_admission',
                                    'discharge_medications',
                                    'discharge_disposition',],
     
@@ -475,7 +474,6 @@ bhc_importance_order = ['sex',
                         'physical_exam',
                         'major_surgical_procedures',
                         'past_medical_history',
-                        'medication_on_admission',
                         'allergies',
                         'social_history',
                         'family_history']
