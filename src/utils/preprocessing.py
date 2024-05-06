@@ -123,7 +123,8 @@ feature_to_header = {
     'discharge_disposition': 'Discharge Disposition',
     'facility': 'Facility',
     'discharge_diagnosis': 'Discharge Diagnosis',
-    'discharge_condition': 'Discharge Condition'
+    'discharge_condition': 'Discharge Condition',
+    'brief_hospital_course': 'Brief Hospital Course'
 }
 
 section_to_starts = {
@@ -460,7 +461,7 @@ def generate_strategies(importance_order, removeable_groups):
                     if to_remove in combinations(list(reversed(removeable_groups[i-1])), n_removed):
                         continue 
                 
-                strategies.append([x for x in bhc_importance_order if x not in to_remove])
+                strategies.append([x for x in importance_order if x not in to_remove])
         
         last_removed_trial = len(removeable_groups[i])
     
