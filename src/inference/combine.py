@@ -16,7 +16,8 @@ def combine_files(bhc_path, di_path, output_path):
     di_df = di_df.rename(columns={'generated': 'discharge_instructions'})
     
     # Merge the two dataframes on the 'idx' column
-    combined_df = pd.merge(bhc_df[['hadm_id', 'brief_hospital_course']], di_df[['hadm_id', 'discharge_instructions']], on='hadm_id')   
+    combined_df = pd.merge(bhc_df[['idx', 'brief_hospital_course']], di_df[['idx', 'discharge_instructions']], on='idx')   
+    combined_df = combined_df.rename(columns={'idx': 'hadm_id'})
     
     # print out the length of three dataframes
     print('Length of BHC dataframe:', len(bhc_df))
