@@ -648,8 +648,9 @@ if __name__ == "__main__":
                 'past_medical_history',
                 'social_history',
                 'family_history',
-                'pertinent_results',
                 'physical_exam',
+                'pertinent_results',
+                'medication_on_admission',
             ]
         
         combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
@@ -686,6 +687,11 @@ if __name__ == "__main__":
     elif args.mode == 'DI':
         original_di_input = combined_discharges['text']
         features_to_consider = [
+                'sex',
+                'service',
+                'chief_complaint',
+                'history_of_present_illness',
+                'physical_exam',
                 'medication_on_admission',
                 'discharge_medications',
                 'discharge_disposition',
