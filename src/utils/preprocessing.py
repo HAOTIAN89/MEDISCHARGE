@@ -610,7 +610,7 @@ if __name__ == "__main__":
     parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', required  = False, default='')
     parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', required = True)
     parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', required = False, default=None)
-    parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', required = True, default='sections')
+    parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', required = True)
 
     args = parser.parse_args()
 
@@ -657,7 +657,7 @@ if __name__ == "__main__":
         
         if args.truncation_strategy == 'sections':
             processed_bhc_input = select_strategy(combined_discharges_with_section_and_counts, mode='BHC', max_length=args.max_tokens, features_to_consider=features_to_consider)
-            
+            filtered_combined_discharges = combined_discharges_with_section_and_counts        
         
         elif args.truncation_strategy == 'samples':
             print("Constructing Final input")
@@ -699,10 +699,12 @@ if __name__ == "__main__":
         features_to_consider = ['brief_hospital_course'] + features_to_consider
 
         if args.generated_bhc_path:
+            print("Using generated BHC as part of input")
             generated_bhc = load_data(args.generated_bhc_path)
             
             combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
         else:
+            print("Using original gold BHC as part of input")
             combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
         
         print("Cleaning BHC as input")
@@ -714,8 +716,10 @@ if __name__ == "__main__":
 
 
         if args.truncation_strategy == 'sections':
+
             processed_di_input = select_strategy(combined_discharges_with_section_and_counts, mode='DI', max_length=args.max_tokens, features_to_consider=features_to_consider)
-        
+            filtered_combined_discharges = combined_discharges_with_section_and_counts
+
         elif args.truncation_strategy == 'samples':
             print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
