@@ -610,6 +610,7 @@ if __name__ == "__main__":
     parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', required = True)
     parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', required = False, default=None)
     parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', required = True)
+    parser.add_argument('--use_generated_bhc', type=str, help='Whether to use the generated BHC as part of the DI input.', required = False, default = "True")
 
     args = parser.parse_args()
 
@@ -700,23 +701,24 @@ if __name__ == "__main__":
             ]
         
         combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
-
-        features_to_consider = ['brief_hospital_course'] + features_to_consider
-
-        if args.generated_bhc_path:
-            print("Using generated BHC as part of input")
-            generated_bhc = load_data(args.generated_bhc_path, type='csv')
-            
-            combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
-        else:
-            print("Using original gold BHC as part of input")
-            combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
         
-        print("Cleaning BHC as input")
-        combined_discharges_with_section_and_counts['brief_hospital_course'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
+        if args.use_generated_bhc == "True":
+            features_to_consider = ['brief_hospital_course'] + features_to_consider
 
-        print("Counting tokens in BHC")
-        combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
+            if args.generated_bhc_path:
+                print("Using generated BHC as part of input")
+                generated_bhc = load_data(args.generated_bhc_path, type='csv')
+            
+                combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
+            else:
+                print("Using original gold BHC as part of input")
+                combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
+        
+            print("Cleaning BHC as input")
+            combined_discharges_with_section_and_counts['brief_hospital_course'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
+
+            print("Counting tokens in BHC")
+            combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
         
 
 
