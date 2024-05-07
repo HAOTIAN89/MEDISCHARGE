@@ -466,6 +466,8 @@ def generate_strategies(importance_order, removeable_groups):
     
     return strategies
 
+all_sections_ordered = ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'social_history', 'family_history', 'physical_exam', 'pertinent_results', 'brief_hospital_course', 'medication_on_admission', 'discharge_medications', 'discharge_disposition', 'facility', 'discharge_diagnosis', 'discharge_condition', 'discharge_instructions']
+
 bhc_importance_order = ['sex',
                         'service',
                         'chief_complaint',
@@ -606,28 +608,25 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', type=str, help='Path to save the preprocessed file.', required = True)
     parser.add_argument('--max_tokens', type=int, help='Maximum number of tokens in the input.', default = None, required=False)
     parser.add_argument('--mode', type=str, required = True, help='Whether to preprocess for BHC or DI generation')
-    parser.add_argument('--features_to_exclude', type=str, help='Features to exclude from the preprocessing', required  = False, default='')
     parser.add_argument('--prompt_path', type=str, help='Path to the prompt file.', required = True)
     parser.add_argument('--generated_bhc_path', type=str, help='Path to the generated BHC file.', required = False, default=None)
     parser.add_argument('--truncation_strategy', type=str, help='Truncation strategy to use.', required = True)
-    parser.add_argument('--use_generated_bhc', type=str, help='Whether to use the generated BHC as part of the DI input.', required = False, default = "True")
+    parser.add_argument('--features_to_consider', type=str, help='List of features to consider for preprocessing', required = False, default=None)
+    parser.add_argument('--ablation_strategies_path', type=str, help='psth to list of strategies to try for ablation study', required = False, default=None)
+    parser.add_argument('--nb_samples', type=int, help='List of samples to use for ablation strategie', required = False, default=None)
 
     args = parser.parse_args()
 
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
-    if args.truncation_strategy not in ['sections', 'samples']:
+    if args.truncation_strategy not in ['sections', 'samples', 'ablation']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
     discharges_df = load_data(args.discharge_path)
     discharges_target_df = load_data(args.discharge_target_path)
 
-    combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)
-
-    in_out = pd.DataFrame()
-    
-    features_to_exclude = args.features_to_exclude.split(',') if args.features_to_exclude else []
+    combined_discharges = build_combined_discharge(discharges_df, discharges_target_df)    
 
     # if the output directory does not exist, create it (root directory is ../../) from this file
     root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -638,29 +637,35 @@ if __name__ == "__main__":
         print(f"Creating output directory at {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
 
-    if args.mode == 'BHC':
-        features_to_consider = [
-                'sex',
-                'service',
-                'allergies',
-                'chief_complaint',
-                'major_surgical_procedures',
-                'history_of_present_illness',
-                'past_medical_history',
-                'social_history',
-                'family_history',
-                'physical_exam',
-                'pertinent_results',
-                'medication_on_admission',
-            ]
+    if args.truncation_strategy == 'ablation':
+        ablation_strategies_df = pd.read_json(args.ablation_strategies_path, lines=True)
+        ablation_strategies = dict(zip(ablation_strategies_df['strat_idx'], ablation_strategies_df['strat']))
+
         
+
+    features_to_consider = args.features_to_consider.split(',') if args.truncation_strategy in ['sections', 'samples'] \
+                else list(set([section for strat in list(ablation_strategies_df['strat']) for section in strat]))
+        
+    features_to_consider = [feature for feature in all_sections_ordered if feature in features_to_consider]
+
+    print(f"Features considered: {features_to_consider}")
+
+    try:
+        prompt = load_data(args.prompt_path, type='json')            
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
+
+    assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
+
+    if args.mode == 'BHC':
+
         combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
         
         if args.truncation_strategy == 'sections':
             processed_bhc_input = select_strategy(combined_discharges_with_section_and_counts, mode='BHC', max_length=args.max_tokens, features_to_consider=features_to_consider)
             filtered_combined_discharges = combined_discharges_with_section_and_counts        
         
-        elif args.truncation_strategy == 'samples':
+        elif args.truncation_strategy in ['samples', 'ablation']:
             print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
@@ -680,40 +685,41 @@ if __name__ == "__main__":
             processed_bhc_input = filtered_combined_discharges['final_input']
             print(f"{processed_bhc_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
 
-        processed_bhc_input = pd.Series(processed_bhc_input)
-        in_out['idx'] = filtered_combined_discharges['hadm_id']
-        in_out['prompt'] = processed_bhc_input
-        in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
+            if args.truncation_strategy == 'ablation':
+                nb_samples = int(args.nb_samples)
+                print(f"Selecting {nb_samples} samples for ablation study")
+                filtered_combined_discharges = filtered_combined_discharges.sample(n=nb_samples, random_state=42).reset_index(drop=True)
+                for id, strat in ablation_strategies.items():
+                    print(f"Selecting strategy {id}: {strat}")
+                    processed_bhc_input = filtered_combined_discharges.progress_apply(lambda x: construct_final_input(x, features_to_consider, strat), axis=1)
+                    in_out = pd.DataFrame()
+                    in_out['idx'] = filtered_combined_discharges['hadm_id']
+                    in_out['prompt'] = processed_bhc_input
+                    in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+                    in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
+                    save_data(in_out, f"{output_path}_strat_{id}.jsonl")
+
+        if args.truncation_strategy != 'ablation':
+            processed_bhc_input = pd.Series(processed_bhc_input)
+            in_out = pd.DataFrame()
+            in_out['idx'] = filtered_combined_discharges['hadm_id']
+            in_out['prompt'] = processed_bhc_input
+            in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
 
     elif args.mode == 'DI':
-        original_di_input = combined_discharges['text']
-        features_to_consider = [
-                'sex',
-                'service',
-                'chief_complaint',
-                'history_of_present_illness',
-                'physical_exam',
-                'medication_on_admission',
-                'discharge_medications',
-                'discharge_disposition',
-                'discharge_diagnosis',
-                'discharge_condition',
-            ]
         
-        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, features_to_consider)
-        
-        if args.use_generated_bhc == "True":
-            features_to_consider = ['brief_hospital_course'] + features_to_consider
+        combined_discharges_with_section_and_counts = extract_clean_sections_and_count_tokens(combined_discharges, [feature for feature in features_to_consider if feature != 'brief_hospital_course'])
 
+        if 'brief_hospital_course' in features_to_consider:
             if args.generated_bhc_path:
                 print("Using generated BHC as part of input")
                 generated_bhc = load_data(args.generated_bhc_path, type='csv')
-            
+                
                 combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + generated_bhc['generated'] + '\n'
             else:
                 print("Using original gold BHC as part of input")
                 combined_discharges_with_section_and_counts['brief_hospital_course'] = 'Brief Hospital Course:\n' + combined_discharges['brief_hospital_course'] + '\n'
-        
+            
             print("Cleaning BHC as input")
             combined_discharges_with_section_and_counts['brief_hospital_course'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(remove_unecessary_tokens)
 
@@ -727,7 +733,7 @@ if __name__ == "__main__":
             processed_di_input = select_strategy(combined_discharges_with_section_and_counts, mode='DI', max_length=args.max_tokens, features_to_consider=features_to_consider)
             filtered_combined_discharges = combined_discharges_with_section_and_counts
 
-        elif args.truncation_strategy == 'samples':
+        elif args.truncation_strategy in ['samples', 'ablation']:
             print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
@@ -746,23 +752,33 @@ if __name__ == "__main__":
 
             processed_di_input = filtered_combined_discharges['final_input']
             print(f"{processed_di_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
+
+            if args.truncation_strategy == 'ablation':
+                nb_samples = int(args.nb_samples)
+                print(f"Selecting {nb_samples} samples for ablation study")
+                filtered_combined_discharges = filtered_combined_discharges.sample(n=nb_samples, random_state=42).reset_index(drop=True)
+                for id, strat in ablation_strategies.items():
+                    print(f"Selecting strategy {id}: {strat}")
+                    processed_di_input = filtered_combined_discharges.progress_apply(lambda x: construct_final_input(x, features_to_consider, strat), axis=1)
+                    in_out = pd.DataFrame()
+                    in_out['idx'] = filtered_combined_discharges['hadm_id']
+                    in_out['prompt'] = processed_di_input
+                    in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+                    in_out['reference'] = filtered_combined_discharges['discharge_instructions']
+                    save_data(in_out, f"{output_path}_strat_{id}.jsonl")
         
-        processed_di_input = pd.Series(processed_di_input)
-        in_out['idx'] = filtered_combined_discharges['hadm_id']
-        in_out['prompt'] = processed_di_input
-        in_out['reference'] = filtered_combined_discharges['discharge_instructions']
+        if args.truncation_strategy != 'ablation':
+            processed_di_input = pd.Series(processed_di_input)
+            in_out = pd.DataFrame()
+            in_out['idx'] = filtered_combined_discharges['hadm_id']
+            in_out['prompt'] = processed_di_input
+            in_out['reference'] = filtered_combined_discharges['discharge_instructions']
     
-
-    try:
-        prompt = load_data(args.prompt_path, type='json')            
-    except FileNotFoundError:
-        raise FileNotFoundError(f"Prompt file not found at {args.prompt_path}.")
-
-    assert len(prompt) == 1 and isinstance(prompt[0][0], str), "Prompt file must be a list of strings with a single element."
     
-    in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
-   
-    print(f'Number of rows: {len(in_out)}')
-    #print('Max tokens:', in_out['prompt'].progress_apply(get_token_count).max())
+    if args.truncation_strategy != 'ablation':
 
-    save_data(in_out, output_path)
+        in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
+    
+        print(f'Number of rows: {len(in_out)}')
+        #print(f"Max tokens: {in_out['prompt'].progress_apply(get_token_count).max()}")
+        save_data(in_out, output_path)
