@@ -37,3 +37,13 @@ if [ "$1" == "medischarge-7B-DI-v6-6k" ] || [ "$1" == "all" ]; then
         --idx_col 'hadm_id' \
         --verbose 0
 fi
+
+if [ "$1" == "medischarge-7B-DI-v6.1-6k" ] || [ "$1" == "all" ]; then
+    python3 infer.py \
+        --model_name medischarge-7B-DI-v6.1-6k \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-7B-DI-v6.1-6k/hf_checkpoint \
+        --input_path ../../data/preprocessed_test/DI_test_dataset_sub_2.jsonl \
+        --output_path ../../data/infered/di_7b_infered_2.csv \
+        --idx_col 'hadm_id' \
+        --verbose 0
+fi

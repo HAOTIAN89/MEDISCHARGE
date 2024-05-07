@@ -491,20 +491,27 @@ removeable_bhc[4] = ['history_of_present_illness', 'chief_complaint'] + removeab
 bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
 last_removed_trial = 0 
 
-di_importance_order = ['brief_hospital_course',
-                        'discharge_medications',
-                        'discharge_diagnosis',
-                        'discharge_disposition',
-                        'discharge_condition',
-                        'medication_on_admission']
+di_importance_order = ['sex',
+                'service',
+                'chief_complaint',
+                'history_of_present_illness',
+                'physical_exam',
+                'discharge_medications',
+                'discharge_diagnosis',
+                'discharge_disposition',
+                'discharge_condition',
+                'medication_on_admission']
 
 removeable_di = {}
-removeable_di[1] = di_importance_order[5:]
+removeable_di[1] = di_importance_order[9:]
 
 removeable_di[2] = ['discharge_medications',
                         'discharge_disposition',
                         'discharge_diagnosis',
                         'discharge_condition'] + removeable_di[1]
+
+removeable_di[3] = ['history_of_present_illness',
+                'physical_exam'] + removeable_di[2]
 
 di_strategy = generate_strategies(di_importance_order, removeable_di)
 

@@ -61,6 +61,7 @@ PARAMETERS = {
     'medischarge-7b-DI-extended': EXTENDED_PARAMETERS,
     'medischarge-7B-BHC-v6-6k': EXTENDED_PARAMETERS,
     "medischarge-7B-DI-v6-6k": EXTENDED_PARAMETERS,
+    "medischarge-7B-DI-v6.1-6k": EXTENDED_PARAMETERS,
 }
 
 # ----------------------- Inference utilities ----------------------- #
