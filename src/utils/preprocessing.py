@@ -624,6 +624,8 @@ if __name__ == "__main__":
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
+    #print(f"{args.output_path}{args.mode.lower()}_strat_.jsonl")
+
     if args.truncation_strategy not in ['sections', 'samples', 'ablation']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
@@ -705,7 +707,8 @@ if __name__ == "__main__":
                     in_out['prompt'] = processed_bhc_input
                     in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
                     in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
-                    save_data(in_out, f"{output_path}_strat_{id}.jsonl")
+                    mode = args.mode.lower()
+                    save_data(in_out, f"{output_path}{mode}_strat_{id}.jsonl")
 
         if args.truncation_strategy != 'ablation':
             processed_bhc_input = pd.Series(processed_bhc_input)
@@ -780,7 +783,8 @@ if __name__ == "__main__":
                     in_out['prompt'] = processed_di_input
                     in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
                     in_out['reference'] = filtered_combined_discharges['discharge_instructions']
-                    save_data(in_out, f"{output_path}{args.mode.lower()}_strat_{id}.jsonl")
+                    mode = args.mode.lower()
+                    save_data(in_out, f"{output_path}{mode}_strat_{id}.jsonl")
         
         if args.truncation_strategy != 'ablation':
             processed_di_input = pd.Series(processed_di_input)
