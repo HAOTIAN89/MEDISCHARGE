@@ -475,41 +475,42 @@ bhc_importance_order = ['sex',
                         'pertinent_results',
                         'physical_exam',
                         'major_surgical_procedures',
-                        'past_medical_history',
                         'allergies',
+                        'family_history',
                         'social_history',
-                        'family_history']
+                        'past_medical_history']
 
 removeable_bhc = {}
 
-removeable_bhc[1] = bhc_importance_order[9:]
+removeable_bhc[1] = ['allergies',
+                    'family_history',
+                    'social_history',
+                    'past_medical_history']
 
-removeable_bhc[2] = ['major_surgical_procedures','past_medical_history','medication_on_admission'] + removeable_bhc[1] 
+removeable_bhc[2] = ['major_surgical_procedures'] + removeable_bhc[1]
 removeable_bhc[3] = ['pertinent_results', 'physical_exam'] + removeable_bhc[2]
-removeable_bhc[4] = ['history_of_present_illness', 'chief_complaint'] + removeable_bhc[3]
+removeable_bhc[4] = ['history_of_present_illness'] + removeable_bhc[3]
 
 bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
-last_removed_trial = 0 
 
 di_importance_order = ['sex',
                 'service',
                 'chief_complaint',
-                'history_of_present_illness',
-                'physical_exam',
                 'discharge_medications',
                 'discharge_diagnosis',
                 'discharge_disposition',
                 'discharge_condition',
+                'physical_exam',
+                'history_of_present_illness',
                 'medication_on_admission']
 
 removeable_di = {}
-removeable_di[1] = di_importance_order[9:]
-removeable_di[2] = ['discharge_medications',
-                        'discharge_disposition',
-                        'discharge_diagnosis',
-                        'discharge_condition'] + removeable_di[1]
-removeable_di[3] = ['history_of_present_illness',
-                'physical_exam'] + removeable_di[2]
+removeable_di[1] = ['history_of_present_illness', 'medication_on_admission']
+removeable_di[2] = ['physical_exam'] + removeable_di[1]
+removeable_di[3] = ['discharge_medications',
+                'discharge_diagnosis',
+                'discharge_disposition',
+                'discharge_condition'] + removeable_di[2]
 di_strategy = generate_strategies(di_importance_order, removeable_di)
 
 def format_section(text, section):
