@@ -504,15 +504,12 @@ di_importance_order = ['sex',
 
 removeable_di = {}
 removeable_di[1] = di_importance_order[9:]
-
 removeable_di[2] = ['discharge_medications',
                         'discharge_disposition',
                         'discharge_diagnosis',
                         'discharge_condition'] + removeable_di[1]
-
 removeable_di[3] = ['history_of_present_illness',
                 'physical_exam'] + removeable_di[2]
-
 di_strategy = generate_strategies(di_importance_order, removeable_di)
 
 def format_section(text, section):
@@ -627,6 +624,8 @@ if __name__ == "__main__":
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
+    #print(f"{args.output_path}{args.mode.lower()}_strat_.jsonl")
+
     if args.truncation_strategy not in ['sections', 'samples', 'ablation']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
@@ -677,22 +676,26 @@ if __name__ == "__main__":
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
             
-            print("Counting token in brief hospital Course")
-            combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
-
             combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=1) + len(features_to_consider)
 
-            
-            combined_discharges_with_section_and_counts['total_tokens']\
-                     = combined_discharges_with_section_and_counts['final_input_tokens'] \
-                        + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
-            
-            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
+            if args.truncation_strategy == 'samples':  
+                print("Counting token in brief hospital Course")
+                combined_discharges_with_section_and_counts['brief_hospital_course_tokens'] = combined_discharges_with_section_and_counts['brief_hospital_course'].progress_apply(get_token_count)
 
-            processed_bhc_input = filtered_combined_discharges['final_input']
-            print(f"{processed_bhc_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
+                combined_discharges_with_section_and_counts['total_tokens']\
+                        = combined_discharges_with_section_and_counts['final_input_tokens'] \
+                            + combined_discharges_with_section_and_counts['brief_hospital_course_tokens']
+                
+                filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
+
+                processed_bhc_input = filtered_combined_discharges['final_input']
+                print(f"{processed_bhc_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
 
             if args.truncation_strategy == 'ablation':
+                
+                filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['final_input_tokens'] <= args.max_tokens].reset_index(drop=True)
+                print(f"{filtered_combined_discharges.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input only).")
+
                 nb_samples = int(args.nb_samples)
                 print(f"Selecting {nb_samples} samples for ablation study")
                 filtered_combined_discharges = filtered_combined_discharges.sample(n=nb_samples, random_state=42).reset_index(drop=True)
@@ -704,7 +707,8 @@ if __name__ == "__main__":
                     in_out['prompt'] = processed_bhc_input
                     in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
                     in_out['reference'] = filtered_combined_discharges['brief_hospital_course']
-                    save_data(in_out, f"{output_path}_strat_{id}.jsonl")
+                    mode = args.mode.lower()
+                    save_data(in_out, f"{output_path}{mode}_strat_{id}.jsonl")
 
         if args.truncation_strategy != 'ablation':
             processed_bhc_input = pd.Series(processed_bhc_input)
@@ -744,23 +748,30 @@ if __name__ == "__main__":
             print("Constructing Final input")
             combined_discharges_with_section_and_counts['final_input'] = combined_discharges_with_section_and_counts\
                     .progress_apply(lambda x: construct_final_input(x, features_to_consider, features_to_consider), axis=1)
-            
-            print("Counting token in discharge instructions")
-            combined_discharges_with_section_and_counts['discharge_instructions_tokens'] = combined_discharges_with_section_and_counts['discharge_instructions'].progress_apply(get_token_count)
 
             combined_discharges_with_section_and_counts['final_input_tokens'] = combined_discharges_with_section_and_counts[[f"{section}_tokens" for section in features_to_consider]].sum(axis=1)\
                                                              + len(feature_to_header) + 1
             
-            combined_discharges_with_section_and_counts['total_tokens']\
-                     = combined_discharges_with_section_and_counts['final_input_tokens'] \
-                        + combined_discharges_with_section_and_counts['discharge_instructions_tokens']
-            
-            filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
+            if args.truncation_strategy == 'samples':            
+                
+                print("Counting token in discharge instructions")
+                combined_discharges_with_section_and_counts['discharge_instructions_tokens'] = combined_discharges_with_section_and_counts['discharge_instructions'].progress_apply(get_token_count)
 
-            processed_di_input = filtered_combined_discharges['final_input']
-            print(f"{processed_di_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
+                combined_discharges_with_section_and_counts['total_tokens']\
+                        = combined_discharges_with_section_and_counts['final_input_tokens'] \
+                            + combined_discharges_with_section_and_counts['discharge_instructions_tokens']
+                
+                filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['total_tokens'] <= args.max_tokens].reset_index(drop=True)
+
+                processed_di_input = filtered_combined_discharges['final_input']
+                print(f"{processed_di_input.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input + outptut).")
 
             if args.truncation_strategy == 'ablation':
+                
+
+                filtered_combined_discharges = combined_discharges_with_section_and_counts[combined_discharges_with_section_and_counts['final_input_tokens'] <= args.max_tokens].reset_index(drop=True)
+                print(f"{filtered_combined_discharges.shape[0]} samples ramining after selecting samples with less than {args.max_tokens} tokens (input only).")
+
                 nb_samples = int(args.nb_samples)
                 print(f"Selecting {nb_samples} samples for ablation study")
                 filtered_combined_discharges = filtered_combined_discharges.sample(n=nb_samples, random_state=42).reset_index(drop=True)
@@ -772,7 +783,8 @@ if __name__ == "__main__":
                     in_out['prompt'] = processed_di_input
                     in_out['prompt'] = in_out['prompt'].progress_apply(lambda x: prompt[0][0].format(x))
                     in_out['reference'] = filtered_combined_discharges['discharge_instructions']
-                    save_data(in_out, f"{output_path}_strat_{id}.jsonl")
+                    mode = args.mode.lower()
+                    save_data(in_out, f"{output_path}{mode}_strat_{id}.jsonl")
         
         if args.truncation_strategy != 'ablation':
             processed_di_input = pd.Series(processed_di_input)

@@ -2,19 +2,21 @@ import os
 import json
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 import evaluate
 
 from bleu import Bleu
 from rouge import Rouge
 from bertscore import BertScore  #
-from perplexity import Perplexity  #
+from .align import AlignScorer
+from .UMLSScorer import UMLSScorer
 
 import argparse # added
 from tqdm import tqdm # added
 
 
-POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "perplexity"}) # added
+POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "medcon", "alignscore"}) # added
 
 
 def calculate_scores(df, metrics, batch_size=128):
@@ -40,6 +42,13 @@ def calculate_scores(df, metrics, batch_size=128):
     if "meteor" in metrics:
         meteorScorer = evaluate.load("meteor")
         print("meteorScorer initialized")
+    if "align" in metrics:
+        alignScorer = AlignScorer()
+        print("alignScorer initialized")
+    if "medcon" in metrics:
+        quickumls_fp = (Path(__file__).parent / "quickumls/").as_posix()
+        medconScorer = UMLSScorer(quickumls_fp=quickumls_fp)
+        print("medconScorer initialized")
         
     pbar = tqdm(total=df.shape[0], desc="Processing samples")
 
@@ -76,7 +85,23 @@ def calculate_scores(df, metrics, batch_size=128):
                 predictions=df["generated"].tolist(),
             )
             scores["meteor"].append(temp["meteor"])
-    
+            
+        if "align" in metrics:
+            # Discharge Instructions
+            temp = alignScorer(
+                refs=df["reference"].tolist(),
+                hyps=df["generated"].tolist(),
+            )
+            scores["align"].extend(temp)
+            
+        if "medcon" in metrics:
+            # Discharge Instructions
+            temp = medconScorer(
+                df["reference"].tolist(),
+                df["generated"].tolist(),
+            )
+            scores["medcon"].extend(temp)
+           
         # print progress
         current_row = i + batch_size
         if current_row % batch_size == 0:
@@ -132,7 +157,21 @@ def compute_overall_score(scores):
         )
         
         leaderboard["meteor"] = meteor_score
+        
+    if "align" in metrics:
+        align_score = np.mean(
+            scores["align"]
+        )
+       
+        leaderboard["align"] = align_score
+        
+    if "medcon" in metrics:
+        medcon_score = np.mean(
+            scores["medcon"]
+        )
 
+        leaderboard["medcon"] = medcon_score
+        
     # normalize sacrebleu to be between 0 and 1
     for key in leaderboard.keys():
         if key == "sacrebleu":
