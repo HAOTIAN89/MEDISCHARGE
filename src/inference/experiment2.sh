@@ -1,8 +1,8 @@
 python ../utils/preprocessing.py \
-    --discharge_path /home/haotian/make-discharge-me/data/version1.4_ours/valid/discharge.csv.gz \
-    --discharge_target_path /home/haotian/make-discharge-me/data/version1.4_ours/valid/discharge_target.csv.gz \
-    --output_path /pure-mlo-scratch/make_project/spring2024/data/version8.0/DI_valid_dataset_v8_4k.jsonl  \
-    --max_tokens 4050 \
+    --discharge_path /home/haotian/make-discharge-me/data/version1.4_ours/test_phase_2/discharge.csv.gz \
+    --discharge_target_path /home/haotian/make-discharge-me/data/version1.4_ours/test_phase_2/discharge_target.csv.gz \
+    --output_path /home/haotian/make-discharge-me/data/preprocessed_test/DI_test_dataset_sub_3.jsonl  \
+    --max_tokens 3200 \
     --mode DI \
     --prompt_path /home/haotian/make-discharge-me/src/prompts/di_test_prompt.json \
     --truncation_strategy samples \

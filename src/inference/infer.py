@@ -53,6 +53,18 @@ EXTENDED_PARAMETERS = {
     'max_tokens': 900
 }
 
+MEDITRON_PARAMETERS = {
+    'best_of': 1,
+    'presence_penalty': 0.0,
+    'frequency_penalty': 1.0,
+    'top_k': -1,
+    'top_p': 1.0,
+    'temperature': 0.0,
+    'stop': EOS_TOKEN,
+    'use_beam_search': False,
+    'max_tokens': 800
+}
+
 PARAMETERS = {
     'meditron-7b': GREEDY_PARAMETERS,
     'medischarge-7b-BHC': GREEDY_PARAMETERS,
@@ -62,6 +74,8 @@ PARAMETERS = {
     'medischarge-7B-BHC-v6-6k': EXTENDED_PARAMETERS,
     "medischarge-7B-DI-v6-6k": EXTENDED_PARAMETERS,
     "medischarge-7B-DI-v6.1-6k": EXTENDED_PARAMETERS,
+    "medischarge-70B-BHC-v7": MEDITRON_PARAMETERS,
+    "medischarge-70B-DI-v7": MEDITRON_PARAMETERS,
 }
 
 # ----------------------- Inference utilities ----------------------- #
