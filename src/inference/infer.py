@@ -25,7 +25,7 @@ from utils.loading_saving import load_file, save_file
 
 BOS_TOKEN, EOS_TOKEN = '<|im_start|>', '<|im_end|>'
 TODO_VAL = -1
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 # ----------------------- Inference parameters ----------------------- #
 

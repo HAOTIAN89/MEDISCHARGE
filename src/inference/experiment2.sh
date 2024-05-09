@@ -5,5 +5,5 @@ python ../utils/preprocessing.py \
     --max_tokens 3200 \
     --mode DI \
     --prompt_path /home/haotian/make-discharge-me/src/prompts/di_test_prompt.json \
-    --truncation_strategy samples \
+    --truncation_strategy sections \
     --features_to_consider sex,service,chief_complaint,history_of_present_illness,physical_exam,discharge_medications,discharge_diagnosis,discharge_disposition,discharge_condition,medication_on_admission

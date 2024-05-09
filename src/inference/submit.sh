@@ -52,7 +52,7 @@ fi
 if [ "$1" == "medischarge-70B-BHC-v7" ] || [ "$1" == "all" ]; then
     python3 infer.py \
         --model_name medischarge-70B-BHC-v7 \
-        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/medischarge-70B-BHC-v7/hf_checkpoint/checkpoint_800 \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-70B-BHC-v7/hf_checkpoint/checkpoint_800 \
         --input_path ../../data/preprocessed_test/BHC_test_dataset_sub_3.jsonl \
         --output_path ../../data/infered/bhc_70b_infered_3.csv \
         --idx_col 'hadm_id' \
@@ -63,7 +63,7 @@ fi
 if [ "$1" == "medischarge-70B-DI-v7" ] || [ "$1" == "all" ]; then
     python3 infer.py \
         --model_name medischarge-70B-DI-v7 \
-        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/medischarge-70B-DI-v7/hf_checkpoint/checkpoint_1200 \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-70B-DI-v7/hf_checkpoint/checkpoint_1200 \
         --input_path ../../data/preprocessed_test/DI_test_dataset_sub_3.jsonl \
         --output_path ../../data/infered/di_70b_infered_3.csv \
         --idx_col 'hadm_id' \
