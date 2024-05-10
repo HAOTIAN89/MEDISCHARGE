@@ -237,6 +237,7 @@ def infer(model_name,
         "trust_remote_code": True,
         "max_num_seqs": 2048,
         "tensor_parallel_size": torch.cuda.device_count(),
+        # "max_num_batched_tokens": 1500,
     }
     client = vllm.LLM(**kwargs)
     print(f"vLLM client initialized")
