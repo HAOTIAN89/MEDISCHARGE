@@ -627,7 +627,7 @@ if __name__ == "__main__":
     
     #print(f"{args.output_path}{args.mode.lower()}_strat_.jsonl")
 
-    if args.truncation_strategy not in ['sections', 'samples', 'ablation']:
+    if args.truncation_strategy not in ['sections', 'samples', 'ablation', 'rouge']:
         raise ValueError("Truncation strategy must be either 'sections' or 'samples'.")
 
     discharges_df = load_data(args.discharge_path)
@@ -643,6 +643,21 @@ if __name__ == "__main__":
     if not os.path.exists(output_dir):
         print(f"Creating output directory at {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
+        
+    if args.truncation_strategy == 'rouge':
+        features_to_consider = args.features_to_consider.split(',')
+        print(f"Features considered: {features_to_consider}")
+        all_features = extract_all_input_features(combined_discharges)
+        for section in features_to_consider:
+            print(f"Formating and cleaning {section} section")
+            combined_discharges[section] = all_features[section].progress_apply(remove_unecessary_tokens)
+        # remove the "text" column
+        combined_discharges = combined_discharges.drop(columns=['text'])
+        # save the combined_discharges dataframe
+        save_data(combined_discharges, output_path)
+        print(f"Saved the preprocessed data at {output_path}")
+        # exit the program
+        sys.exit(0)
 
     if args.truncation_strategy == 'ablation':
         ablation_strategies_df = pd.read_json(args.ablation_strategies_path, lines=True)
