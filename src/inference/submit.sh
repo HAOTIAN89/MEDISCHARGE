@@ -37,3 +37,35 @@ if [ "$1" == "medischarge-7B-DI-v6-6k" ] || [ "$1" == "all" ]; then
         --idx_col 'hadm_id' \
         --verbose 0
 fi
+
+if [ "$1" == "medischarge-7B-DI-v6.1-6k" ] || [ "$1" == "all" ]; then
+    python3 infer.py \
+        --model_name medischarge-7B-DI-v6.1-6k \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-7B-DI-v6.1-6k/hf_checkpoint \
+        --input_path ../../data/preprocessed_test/DI_test_dataset_sub_2.jsonl \
+        --output_path ../../data/infered/di_7b_infered_2.csv \
+        --idx_col 'hadm_id' \
+        --verbose 0
+fi
+
+
+if [ "$1" == "medischarge-70B-BHC-v7" ] || [ "$1" == "all" ]; then
+    python3 infer.py \
+        --model_name medischarge-70B-BHC-v7 \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-70B-BHC-v7/hf_checkpoint/checkpoint_1400 \
+        --input_path ../../data/preprocessed_test/BHC_test_dataset_sub_5.jsonl \
+        --output_path ../../data/infered/bhc_70b_infered_5.csv \
+        --idx_col 'hadm_id' \
+        --verbose 0
+fi
+
+
+if [ "$1" == "medischarge-70B-DI-v7" ] || [ "$1" == "all" ]; then
+    python3 infer.py \
+        --model_name medischarge-70B-DI-v7 \
+        --model_path /pure-mlo-scratch/make_project/spring2024/trial-runs/meditron-70B-DI-v7/hf_checkpoint/checkpoint_1600 \
+        --input_path ../../data/preprocessed_test/DI_test_dataset_sub_5.jsonl \
+        --output_path ../../data/infered/di_70b_infered_5.csv \
+        --idx_col 'hadm_id' \
+        --verbose 0
+fi

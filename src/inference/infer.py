@@ -53,6 +53,42 @@ EXTENDED_PARAMETERS = {
     'max_tokens': 900
 }
 
+MEDITRON_PARAMETERS = {
+    'best_of': 1,
+    'presence_penalty': 0.0,
+    'frequency_penalty': 1.0,
+    'top_k': -1,
+    'top_p': 1.0,
+    'temperature': 0.0,
+    'stop': EOS_TOKEN,
+    'use_beam_search': False,
+    'max_tokens': 800
+}
+
+MEDITRON_DI_PARAMETERS = {
+    'best_of': 1,
+    'presence_penalty': 0.0,
+    'frequency_penalty': 1.0,
+    'top_k': -1,
+    'top_p': 1.0,
+    'temperature': 0.0,
+    'stop': EOS_TOKEN,
+    'use_beam_search': False,
+    'max_tokens': 600
+}
+
+MEDITRON_BHC_PARAMETERS = {
+    'best_of': 1,
+    'presence_penalty': 0.0,
+    'frequency_penalty': 1.0,
+    'top_k': -1,
+    'top_p': 1.0,
+    'temperature': 0.0,
+    'stop': EOS_TOKEN,
+    'use_beam_search': False,
+    'max_tokens': 1200
+}
+
 PARAMETERS = {
     'meditron-7b': GREEDY_PARAMETERS,
     'medischarge-7b-BHC': GREEDY_PARAMETERS,
@@ -61,6 +97,9 @@ PARAMETERS = {
     'medischarge-7b-DI-extended': EXTENDED_PARAMETERS,
     'medischarge-7B-BHC-v6-6k': EXTENDED_PARAMETERS,
     "medischarge-7B-DI-v6-6k": EXTENDED_PARAMETERS,
+    "medischarge-7B-DI-v6.1-6k": EXTENDED_PARAMETERS,
+    "medischarge-70B-BHC-v7": MEDITRON_BHC_PARAMETERS,
+    "medischarge-70B-DI-v7": MEDITRON_DI_PARAMETERS,
 }
 
 # ----------------------- Inference utilities ----------------------- #
@@ -198,6 +237,7 @@ def infer(model_name,
         "trust_remote_code": True,
         "max_num_seqs": 2048,
         "tensor_parallel_size": torch.cuda.device_count(),
+        # "max_num_batched_tokens": 1500,
     }
     client = vllm.LLM(**kwargs)
     print(f"vLLM client initialized")
