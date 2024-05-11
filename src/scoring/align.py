@@ -1,6 +1,7 @@
 import torch.nn as nn
 from pathlib import Path
 import sys
+import torch
 
 # Add the path of the alignscore library to the system path
 ALIGN_SCORE_LIB = Path(__file__).parent.as_posix()
@@ -13,12 +14,13 @@ class AlignScorer(nn.Module):
         super(AlignScorer, self).__init__()
         self.align_scorer = AlignScore(
             model='roberta-base', 
-            device='cpu',
+            device='cuda' if torch.cuda.is_available() else 'cpu',
             batch_size=8, 
             ckpt_path='https://huggingface.co/yzha/AlignScore/resolve/main/AlignScore-base.ckpt', 
             evaluation_mode='nli_sp')
 
     def forward(self, refs, hyps):
+        # move the data to the device
         f = self.align_scorer.score(
             contexts=refs,
             claims=hyps,

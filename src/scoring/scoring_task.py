@@ -9,14 +9,14 @@ import evaluate
 from bleu import Bleu
 from rouge import Rouge
 from bertscore import BertScore  #
-from .align import AlignScorer
-from .UMLSScorer import UMLSScorer
+from align import AlignScorer
+from UMLSScorer import UMLSScorer
 
 import argparse # added
 from tqdm import tqdm # added
 
 
-POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "medcon", "alignscore"}) # added
+POSSIBLE_METRICS = set({"bleu", "rouge", "bertscore", "meteor", "medcon", "align"}) # added
 
 
 def calculate_scores(df, metrics, batch_size=128):
@@ -100,7 +100,7 @@ def calculate_scores(df, metrics, batch_size=128):
                 df["reference"].tolist(),
                 df["generated"].tolist(),
             )
-            scores["medcon"].extend(temp)
+            scores["medcon"].append(temp)
            
         # print progress
         current_row = i + batch_size
