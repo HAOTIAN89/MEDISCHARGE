@@ -1,7 +1,7 @@
 python ../utils/preprocessing.py \
-    --discharge_path /home/haotian/make-discharge-me/data/version1.4_ours/valid/discharge.csv.gz \
-    --discharge_target_path /home/haotian/make-discharge-me/data/version1.4_ours/valid/discharge_target.csv.gz \
-    --output_path /home/haotian/make-discharge-me/data/preprocessed_test/test.csv \
+    --discharge_path /home/haotian/make-discharge-me/data/version1.4_ours/train/discharge.csv.gz \
+    --discharge_target_path /home/haotian/make-discharge-me/data/version1.4_ours/train/discharge_target.csv.gz \
+    --output_path /home/haotian/make-discharge-me/data/results/train.csv \
     --mode DI \
     --prompt_path /home/haotian/make-discharge-me/src/prompts/di_test_prompt.json \
     --truncation_strategy rouge \
