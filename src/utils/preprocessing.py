@@ -555,7 +555,7 @@ def construct_final_input(row, features_to_consider, features_selected):
                 row[section] if section in features_selected else '\n' + feature_to_header[section] + ':\nNone\n' for section in features_to_consider
             ])
 
-def select_strategy(combined_df_with_sections, mode, max_length, features_to_consider):
+def select_strategy(combined_df_with_sections, mode, max_length, features_to_consider = None, return_strats_counter = False):
     """
     Selects the strategy for the preprocessing based on the mode.
     
@@ -567,21 +567,30 @@ def select_strategy(combined_df_with_sections, mode, max_length, features_to_con
         (list) list of features to include in the preprocessing
     """
     
-    sections_to_consider = features_to_consider
+    
     
     if mode == 'BHC':
         strategies = bhc_strategy
+        if not features_to_consider :
+            features_to_consider = bhc_strategy[0]
     elif mode == 'DI':
         strategies = di_strategy
+        if not features_to_consider :
+            features_to_consider = di_strategy[0]
   
     else:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
+    sections_to_consider = features_to_consider
+    
+    if return_strats_counter:
+        strats_counter = {i: 0 for i in range(len(strategies))}
+
     outputs = []
     too_long = 0
     for _, row in tqdm(combined_df_with_sections.iterrows(), desc='Selecting strategy', total=len(combined_df_with_sections)):
         total_tokens = 0
-        for select in strategies:
+        for i, select in enumerate(strategies):
             total_tokens = 0
             for section in sections_to_consider:
                 if section in select:
@@ -601,9 +610,14 @@ def select_strategy(combined_df_with_sections, mode, max_length, features_to_con
         else:
             output = construct_final_input(row, sections_to_consider, final_select)
         outputs.append(output)
+        if return_strats_counter:
+            strats_counter[i] += 1
         
     print(f'Number of rows that exceed the maximum length: {too_long}/{len(combined_df_with_sections)}')
-    return outputs
+    if return_strats_counter:
+        return outputs, strats_counter
+    else:
+        return outputs
 
 
 if __name__ == "__main__":
