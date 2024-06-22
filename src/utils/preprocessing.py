@@ -6,6 +6,7 @@ import os
 import sys
 tqdm.pandas()
 from itertools import combinations
+import json
 
 current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(os.path.dirname(current_file_path))
@@ -106,200 +107,75 @@ def get_original_bhc_di_input(combined_discharges: pd.DataFrame, mode ='bhc') ->
     
     return original_bhc_input
 
-feature_to_header = {
-    'sex': 'Sex',
-    'service': 'Service',
-    'allergies': 'Allergies',
-    'chief_complaint': 'Chief Complaint',
-    'major_surgical_procedures': 'Major Surgical or Invasive Procedure',
-    'history_of_present_illness': 'History of Present Illness',
-    'past_medical_history': 'Past Medical History',
-    'social_history': 'Social History',
-    'family_history': 'Family History',
-    'physical_exam': 'Physical Exam',
-    'pertinent_results': 'Pertinent Results',
-    'medication_on_admission': 'Medications on Admission',
-    'discharge_medications': 'Discharge Medications',
-    'discharge_disposition': 'Discharge Disposition',
-    'facility': 'Facility',
-    'discharge_diagnosis': 'Discharge Diagnosis',
-    'discharge_condition': 'Discharge Condition',
-    'brief_hospital_course': 'Brief Hospital Course'
+additonal_data_dir = 'src/utils/additional_data'
+
+def generate_strategies(importance_order, removeable_groups):
+    
+    strategies = [importance_order]
+    last_removed_trial = 0 
+    for i in removeable_groups:
+        for n_removed in range(1, len(removeable_groups[i])+1):
+            for to_remove in combinations(list(reversed(removeable_groups[i])), n_removed):
+                if i > 1 and n_removed <= last_removed_trial:
+                    if to_remove in combinations(list(reversed(removeable_groups[i-1])), n_removed):
+                        continue 
+                
+                strategies.append([x for x in importance_order if x not in to_remove])
+        
+        last_removed_trial = len(removeable_groups[i])
+    
+    return strategies
+
+additional_data_paths = {
+    "feature_to_header" : os.path.join(additonal_data_dir, 'feature_to_header.json'),
+    "section_to_next_sections" : os.path.join(additonal_data_dir, 'section_to_next_sections.json'),
+    "section_to_starts" : os.path.join(additonal_data_dir, 'section_to_starts.json'),    
+    "all_sections_basic_ordered" : os.path.join(additonal_data_dir, 'all_sections_basic_ordered.json'),
+    "bhc_importance_order" : os.path.join(additonal_data_dir, 'bhc_importance_oder.json'),
+    "di_importance_order" : os.path.join(additonal_data_dir, 'di_importance_oder.json')
+    
 }
 
-section_to_starts = {
-    'sex' : ['Sex:'],
+additonal_data = {}
 
-    'service' : ['Service:'],
+for name, path in additional_data_paths.items():
+    with open (path, "r") as f:
+        additonal_data[name] = json.load(f.read())
 
-    'allergies' : ['Allergies:'],
+feature_to_header = additonal_data["feature_to_header"]
+section_to_next_sections = additonal_data["section_to_next_sections"]
+section_to_starts = additonal_data["section_to_starts"]
+all_sections_basic_ordered = additonal_data["all_sections_basic_ordered"]
+bhc_importance_order = additonal_data["bhc_importance_order"]
+di_importance_order = additonal_data["di_importance_order"]
 
-    'chief_complaint' : ['Attending:.*?\n \nChief Complaint:',
-                         'Attending:.*?\n \n___ Complaint:',
-                         '___ Complaint:'],
-
-    'major_surgical_procedures' : ['Major Surgical or Invasive Procedure:',
-                                   '___ Surgical or Invasive Procedure:',
-                                   'Major Surgical ___ Invasive Procedure:',
-                                   'Major ___ or Invasive Procedure:'],
-
-    'history_of_present_illness' : ['History of Present Illness:',
-                                    'HISTORY OF PRESENT ILLNESS:',
-                                    'HISTORY OF THE PRESENTING ILLNESS:',
-                                    '___ of Present Illness:',
-                                    'HPI:'],
-
-    'past_medical_history' : ['Past Medical History:'],
-
-    'social_history' : ['Social History:',
-                        '___ History:'],
-
-    'family_history' : ['Family history:',
-                        'Family History:'],
-
-    'physical_exam' : [ 'Physical ___:',
-                        'Physical Exam:',
-                        'Physical ___ exam:',
-                        'Physical ___ Exam:',
-                        '___ Exam:',
-                        'Physical ___ PE ___:',
-                        'Physical ___ physical exam\nPhysical exam:',
-                        'Physical ___ Physical Exam\nExam:',
-                        'Physical ___ Physical Exam:',
-                        'Physical ___ physical exam:',
-                        'Physical ___ PHYSICAL EXAM:',
-                        'Physical ___ PE',
-                        'Physical ___ PE:'
-                        ],
-
-    'pertinent_results' : ['Pertinent Results:'],
-
-    'medication_on_admission' : ['Medications on Admission:',
-                                'Medications on admission:',
-                                '___ on admission:',
-                                '___ on Admission:',
-                                '___ on ___:'],
-
-    'discharge_medications' : ['Discharge Medications:',
-                                'Discharge medications:',
-                                '___ Medications:',
-                                '___ medications:'],
-
-    'discharge_disposition' : ['Discharge Disposition:',
-                               '___ Disposition:',
-                               'Discharge disposition:',
-                               '___ disposition:'],
-
-    'facility' : ['Facility:'],
-
-    'discharge_diagnosis' : ['Discharge Diagnosis:',
-                             '___ Diagnosis:',
-                             '___ischarge Diagnosis:',
-                             '___:'],
-
-    'discharge_condition' : ['Discharge Condition:',
-                             '___ Condition:',
-                             'Discharge ___:',
-                             '___:',],
-
-    'end' : ['Followup Instructions:',
-             ' Followup Instructions:']
-}
-
-section_to_next_section = {
-    'sex' : ['service','allergies'],
-    
-    'service' : ['allergies'],
-    
-    'allergies' : ['chief_complaint',
-                   'major_surgical_procedures',
-                   'history_of_present_illness',
-                   'past_medical_history',
-                    'social_history',
-                    'family_history',
-                    'physical_exam',
-                   'pertinent_results'],
-    
-    'chief_complaint' : ['major_surgical_procedures',
-                         'history_of_present_illness'],
-    
-    'major_surgical_procedures' : ['history_of_present_illness',
-                                   'past_medical_history',
-                                   'social_history',
-                                   'family_history',
-                                   'physical_exam',
-                                   'pertinent_results',
-                                   'discharge_medications',
-                                   'discharge_disposition',],
-    
-    'history_of_present_illness' : ['past_medical_history',
-                                    'social_history',
-                                    'family_history',
-                                    'physical_exam',
-                                    'pertinent_results',
-                                    'medication_on_admission',
-                                    'discharge_medications'],
-    
-    'past_medical_history' : ['social_history',
-                              'family_history',
-                                'physical_exam',
-                                'pertinent_results',
-                                'medication_on_admission',
-                                'discharge_medications',
-                                'discharge_disposition',
-                                'facility',
-                                'discharge_diagnosis',
-                                'discharge_condition'],
-    
-    
-    'social_history' : ['family_history',
-                        'physical_exam',
-                        'pertinent_results',
-                        'medication_on_admission',
-                        'discharge_medications'],
-    
-    'family_history' : ['physical_exam',
-                        'pertinent_results',
-                        'medication_on_admission',
-                        'discharge_medications',
-                        'discharge_disposition'],
-    
-    'physical_exam' : ['pertinent_results',
-                        'medication_on_admission',
-                        'discharge_medications',
-                        'discharge_disposition'],
-    
-    'pertinent_results' : ['medication_on_admission',
-                            'discharge_medications',
-                            'discharge_disposition',
-                            'facility',
-                            'discharge_diagnosis'],                    
-    
-    'medication_on_admission' : ['discharge_medications',
-                                'discharge_disposition',
-                                'discharge_diagnosis'],
-    
-    'discharge_medications' : ['discharge_disposition',
-                                'facility',
-                                'discharge_diagnosis',
-                                'discharge_condition'],
-    
-    'discharge_disposition' : ['facility',
-                                'discharge_diagnosis'],
-
-    
-    'facility' : ['discharge_diagnosis',
-                'discharge_condition'],
-    
-    'discharge_diagnosis' : ['discharge_condition','end'],
-    
-    'discharge_condition' : ['end']
-}
-
-starts_to_section = {start: section for section, starts in section_to_starts.items() for start in starts}
+start_to_section = {start: section for section, starts in section_to_starts.items() for start in starts}
 
 #concat all starts and ends keys into one set
 all_starts = [start for starts in section_to_starts.values() for start in starts]
+
+removeable_bhc = {}
+
+removeable_bhc[1] = ['allergies',
+                    'family_history',
+                    'social_history',
+                    'past_medical_history']
+
+removeable_bhc[2] = ['major_surgical_procedures'] + removeable_bhc[1]
+removeable_bhc[3] = ['pertinent_results', 'physical_exam'] + removeable_bhc[2]
+removeable_bhc[4] = ['history_of_present_illness'] + removeable_bhc[3]
+
+bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
+
+removeable_di = {}
+removeable_di[1] = ['history_of_present_illness', 'medication_on_admission']
+removeable_di[2] = ['physical_exam'] + removeable_di[1]
+removeable_di[3] = ['discharge_medications',
+                'discharge_diagnosis',
+                'discharge_disposition',
+                'discharge_condition'] + removeable_di[2]
+
+di_strategy = generate_strategies(di_importance_order, removeable_di)
 
 def extract_section(text: str, section: str, start_idx: int, start_alias: str) -> str:
     """
@@ -321,7 +197,7 @@ def extract_section(text: str, section: str, start_idx: int, start_alias: str) -
     else:
         starts = section_to_starts[section]
     
-    next_sections = section_to_next_section[section]
+    next_sections = section_to_next_sections[section]
     section_text = ''
     extracted_until = start_idx
     next_start_alias = ''
@@ -352,7 +228,7 @@ def extract_section(text: str, section: str, start_idx: int, start_alias: str) -
         if aliases_in_section:
             start_alias_ = aliases_in_section[0]
             start_idx_ = section_text.find(start_alias_)
-            for section_ in section_to_next_section.keys():
+            for section_ in section_to_next_sections.keys():
                     sub_section, start_idx_, start_alias_, _  = extract_section(section_text, section_, start_idx_, start_alias_)
                     if sub_section not in ['___', 'None', 'as above', 'as bellow', '']:
                         sub_sections[section_] = sub_section'''
@@ -383,10 +259,10 @@ def extract_one_all_input_features(text: str) -> str:
             extracted_features dict: dictionary with the extracted features
     """
     #sub_sections = {}
-    extracted_features = {section : '' for section in section_to_next_section.keys()}
+    extracted_features = {section : '' for section in section_to_next_sections.keys()}
     start_idx = 0
     start_alias = None
-    for section in section_to_next_section.keys():
+    for section in section_to_next_sections.keys():
         extracted_features[section], start_idx, start_alias = extract_section(text, section, start_idx, start_alias)
 
     return extracted_features
@@ -449,69 +325,7 @@ def lowercase_first_letter(text) -> str:
 def remove_unecessary_tokens(text):
     return treat_weird_tokens(treat_equals(remove_enumerations(remove_underscores(text))))
 
-def generate_strategies(importance_order, removeable_groups):
-    
-    strategies = [importance_order]
-    last_removed_trial = 0 
-    for i in removeable_groups:
-        for n_removed in range(1, len(removeable_groups[i])+1):
-            for to_remove in combinations(list(reversed(removeable_groups[i])), n_removed):
-                if i > 1 and n_removed <= last_removed_trial:
-                    if to_remove in combinations(list(reversed(removeable_groups[i-1])), n_removed):
-                        continue 
-                
-                strategies.append([x for x in importance_order if x not in to_remove])
-        
-        last_removed_trial = len(removeable_groups[i])
-    
-    return strategies
 
-all_sections_ordered = ['sex', 'service', 'allergies', 'chief_complaint', 'major_surgical_procedures', 'history_of_present_illness', 'past_medical_history', 'social_history', 'family_history', 'physical_exam', 'pertinent_results', 'brief_hospital_course', 'medication_on_admission', 'discharge_medications', 'discharge_disposition', 'facility', 'discharge_diagnosis', 'discharge_condition', 'discharge_instructions']
-
-bhc_importance_order = ['sex',
-                        'service',
-                        'chief_complaint',
-                        'history_of_present_illness',
-                        'pertinent_results',
-                        'physical_exam',
-                        'major_surgical_procedures',
-                        'allergies',
-                        'family_history',
-                        'social_history',
-                        'past_medical_history']
-
-removeable_bhc = {}
-
-removeable_bhc[1] = ['allergies',
-                    'family_history',
-                    'social_history',
-                    'past_medical_history']
-
-removeable_bhc[2] = ['major_surgical_procedures'] + removeable_bhc[1]
-removeable_bhc[3] = ['pertinent_results', 'physical_exam'] + removeable_bhc[2]
-removeable_bhc[4] = ['history_of_present_illness'] + removeable_bhc[3]
-
-bhc_strategy = generate_strategies(bhc_importance_order, removeable_bhc)
-
-di_importance_order = ['sex',
-                'service',
-                'chief_complaint',
-                'discharge_medications',
-                'discharge_diagnosis',
-                'discharge_disposition',
-                'discharge_condition',
-                'physical_exam',
-                'history_of_present_illness',
-                'medication_on_admission']
-
-removeable_di = {}
-removeable_di[1] = ['history_of_present_illness', 'medication_on_admission']
-removeable_di[2] = ['physical_exam'] + removeable_di[1]
-removeable_di[3] = ['discharge_medications',
-                'discharge_diagnosis',
-                'discharge_disposition',
-                'discharge_condition'] + removeable_di[2]
-di_strategy = generate_strategies(di_importance_order, removeable_di)
 
 def format_section(text, section):
     """
@@ -535,7 +349,7 @@ def extract_clean_sections_and_count_tokens(raw_combined_df, sections_to_conside
     """
 
     for feature in sections_to_consider:
-        if feature not in section_to_next_section.keys():
+        if feature not in section_to_next_sections.keys():
             raise ValueError(f"Feature {feature} cannot be extracted. Choose from {list(sections_to_consider.keys())}.") 
 
     all_features = extract_all_input_features(raw_combined_df)
@@ -636,6 +450,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+
     if args.mode not in ['BHC', 'DI']:
         raise ValueError("Mode must be either 'BHC' or 'DI'.")
     
@@ -682,7 +497,7 @@ if __name__ == "__main__":
     features_to_consider = args.features_to_consider.split(',') if args.truncation_strategy in ['sections', 'samples'] \
                 else list(set([section for strat in list(ablation_strategies_df['strat']) for section in strat]))
         
-    features_to_consider = [feature for feature in all_sections_ordered if feature in features_to_consider]
+    features_to_consider = [feature for feature in all_sections_basic_ordered if feature in features_to_consider]
 
     print(f"Features considered: {features_to_consider}")
 
