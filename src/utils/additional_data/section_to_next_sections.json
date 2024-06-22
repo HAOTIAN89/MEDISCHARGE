@@ -1,0 +1,91 @@
+{
+    "sex" :                         ["service",
+                                    "allergies"],
+    
+    "service" :                     ["allergies"],
+    
+    "allergies" :                   ["chief_complaint",
+                                    "major_surgical_procedures",
+                                    "history_of_present_illness",
+                                    "past_medical_history",
+                                    "social_history",
+                                    "family_history",
+                                    "physical_exam",
+                                    "pertinent_results"],
+    
+    "chief_complaint" :             ["major_surgical_procedures",
+                                    "history_of_present_illness"],
+    
+    "major_surgical_procedures" :   ["history_of_present_illness",
+                                    "past_medical_history",
+                                    "social_history",
+                                    "family_history",
+                                    "physical_exam",
+                                    "pertinent_results",
+                                    "discharge_medications",
+                                    "discharge_disposition"],
+    
+    "history_of_present_illness" :  ["past_medical_history",
+                                    "social_history",
+                                    "family_history",
+                                    "physical_exam",
+                                    "pertinent_results",
+                                    "medication_on_admission",
+                                    "discharge_medications"],
+    
+    "past_medical_history" :        ["social_history",
+                                    "family_history",
+                                    "physical_exam",
+                                    "pertinent_results",
+                                    "medication_on_admission",
+                                    "discharge_medications",
+                                    "discharge_disposition",
+                                    "facility",
+                                    "discharge_diagnosis",
+                                    "discharge_condition"],
+    
+    
+    "social_history" :              ["family_history",
+                                    "physical_exam",
+                                    "pertinent_results",
+                                    "medication_on_admission",
+                                    "discharge_medications"],
+    
+    "family_history" :              ["physical_exam",
+                                    "pertinent_results",
+                                    "medication_on_admission",
+                                    "discharge_medications",
+                                    "discharge_disposition"],
+    
+    "physical_exam" :               ["pertinent_results",
+                                    "medication_on_admission",
+                                    "discharge_medications",
+                                    "discharge_disposition"],
+    
+    "pertinent_results" :           ["medication_on_admission",
+                                    "discharge_medications",
+                                    "discharge_disposition",
+                                    "facility",
+                                    "discharge_diagnosis"],                    
+    
+    "medication_on_admission" :     ["discharge_medications",
+                                    "discharge_disposition",
+                                    "discharge_diagnosis"],
+    
+    "discharge_medications" :       ["discharge_disposition",
+                                    "facility",
+                                    "discharge_diagnosis",
+                                    "discharge_condition"],
+    
+    "discharge_disposition" :       ["facility",
+                                    "discharge_diagnosis"],
+
+    
+    "facility" :                    ["discharge_diagnosis",
+                                    "discharge_condition"],
+    
+    "discharge_diagnosis" :         ["discharge_condition",
+                                    "end"],
+    
+    "discharge_condition" :         ["end"]
+}

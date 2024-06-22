@@ -1,0 +1,77 @@
+{
+    "sex" :                         ["Sex:"],
+
+    "service" :                     ["Service:"],
+
+    "allergies" :                   ["Allergies:"],
+
+    "chief_complaint" :             ["Attending:.*?\n \nChief Complaint:",
+                                    "Attending:.*?\n \n___ Complaint:",
+                                    "___ Complaint:"],
+
+    "major_surgical_procedures" :   ["Major Surgical or Invasive Procedure:",
+                                    "___ Surgical or Invasive Procedure:",
+                                    "Major Surgical ___ Invasive Procedure:",
+                                    "Major ___ or Invasive Procedure:"],
+
+    "history_of_present_illness" :  ["History of Present Illness:",
+                                    "HISTORY OF PRESENT ILLNESS:",
+                                    "HISTORY OF THE PRESENTING ILLNESS:",
+                                    "___ of Present Illness:",
+                                    "HPI:"],
+
+    "past_medical_history" :    ["Past Medical History:"],
+
+    "social_history" :          ["Social History:",
+                                "___ History:"],
+
+    "family_history" :          ["Family history:",
+                                "Family History:"],
+
+    "physical_exam" :           [ "Physical ___:",
+                                "Physical Exam:",
+                                "Physical ___ exam:",
+                                "Physical ___ Exam:",
+                                "___ Exam:",
+                                "Physical ___ PE ___:",
+                                "Physical ___ physical exam\nPhysical exam:",
+                                "Physical ___ Physical Exam\nExam:",
+                                "Physical ___ Physical Exam:",
+                                "Physical ___ physical exam:",
+                                "Physical ___ PHYSICAL EXAM:",
+                                "Physical ___ PE",
+                                "Physical ___ PE:"],
+
+    "pertinent_results" :       ["Pertinent Results:"],
+
+    "medication_on_admission" : ["Medications on Admission:",
+                                "Medications on admission:",
+                                "___ on admission:",
+                                "___ on Admission:",
+                                "___ on ___:"],
+
+    "discharge_medications" :   ["Discharge Medications:",
+                                "Discharge medications:",
+                                "___ Medications:",
+                                "___ medications:"],
+
+    "discharge_disposition" :   ["Discharge Disposition:",
+                                "___ Disposition:",
+                                "Discharge disposition:",
+                                "___ disposition:"],
+
+    "facility" :                ["Facility:"],
+
+    "discharge_diagnosis" :     ["Discharge Diagnosis:",
+                                "___ Diagnosis:",
+                                "___ischarge Diagnosis:",
+                                "___:"],
+
+    "discharge_condition" :     ["Discharge Condition:",
+                                "___ Condition:",
+                                "Discharge ___:",
+                                "___:"],
+
+    "end" :                     ["Followup Instructions:",
+                                " Followup Instructions:"]
+}

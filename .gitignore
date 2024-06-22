@@ -3,7 +3,7 @@
 *.sql
 *.sqlite
 *.sqlite3
-*data/
+data/
 *raw/
 *processed/
 *external/
