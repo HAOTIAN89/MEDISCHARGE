@@ -33,7 +33,7 @@ In order to run our system to generate the Brief Hospital Course and Discharge I
 In the `src/inference` folder:
 - `BHC_construct.sh`: construct the patient’s Electronic Health Records into prompt for generating Brief Hospital Course.
 - `DI_construct.sh`: construct the patient’s Electronic Health Records into prompt for generating Discharge Instruction.
-- `submit.sh`: run the BHC or DI inference based on the generated prompts.
+- `submit.sh`: run the BHC or DI inference based on the constructed prompts.
 - `submit_all.sh`: combine the generated BHC and DI as one csv file and reorder the index to satisfy the submission requirement(optional)
   
 ### Evaluation
