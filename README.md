@@ -23,6 +23,9 @@ git+https://github.com/facebookresearch/llama.git
 
 For any other packages that may be required, please see the error messages and install accordingly.
 
+## Dataset
+Our dataset is 
+
 ## Run MEDISCHARGE System
 In order to run our system to generate the Brief Hospital Course and Discharge Instruction summaries based on a patient’s Electronic Health Record, you should follow these instructions.
 
@@ -30,5 +33,8 @@ In order to run our system to generate the Brief Hospital Course and Discharge I
 
 ### Evaluation
 
-
+## Other Files
+- `webapp/`: a simplified frondend to check the patient’s Electronic Health Records.
+- `context-extension/`: ROPE experiments determine optimal context window expansion.
+- `notebooks/`: dataset cleaning and preprocessing.
 
