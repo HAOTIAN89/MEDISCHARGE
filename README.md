@@ -26,9 +26,9 @@ For any other packages that may be required, please see the error messages and i
 ## Run MEDISCHARGE System
 In order to run our system to generate the Brief Hospital Course and Discharge Instruction summaries based on a patient’s Electronic Health Record, you should follow these instructions.
 
-#### Inference
+### Inference
 
-#### Evaluation
+### Evaluation
 
 
 
