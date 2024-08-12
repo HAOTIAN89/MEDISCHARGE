@@ -1,0 +1,8 @@
+{"strat_idx": 1, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]}
+{"strat_idx": 2, "strat": ["sex", "service", "chief_complaint", "physical_exam",  "medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]}
+{"strat_idx": 3, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness",  "medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]}
+{"strat_idx": 5, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "medication_on_admission", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]}
+{"strat_idx": 6, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_condition"]}
+{"strat_idx": 7, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "medication_on_admission", "discharge_medications", "discharge_diagnosis", "discharge_condition"]}
+{"strat_idx": 8, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "medication_on_admission", "discharge_medications", "discharge_disposition", "discharge_diagnosis"]}
+{"strat_idx": 9, "strat": ["sex", "service", "chief_complaint", "history_of_present_illness", "physical_exam",  "discharge_medications", "discharge_disposition", "discharge_diagnosis", "discharge_condition"]}

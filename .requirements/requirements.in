@@ -1,0 +1,47 @@
+# DL/ML
+torch>=2.0.0
+scikit-learn
+pytorch-lightning
+
+# NLP
+transformers
+sentence-transformers
+vllm
+langchain
+spacy>=3.4.1,<3.5.0
+scispacy==0.5.1
+nltk
+tiktoken
+openai
+
+# Biomedical
+quickumls
+
+# Scoring
+torchmetrics
+evaluate
+six
+bert_score
+rouge_score
+
+# Tracking
+tensorboard
+wandb
+
+# Datasets
+datasets
+
+# Data Manipulation
+pandas
+numpy
+
+# Stats
+scipy
+
+# Visualization
+matplotlib
+seaborn
+
+# DevOps
+pre-commit
+pip-tools

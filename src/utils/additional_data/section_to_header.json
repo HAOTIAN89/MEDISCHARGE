@@ -1,0 +1,20 @@
+{
+    "sex":                          "Sex",
+    "service":                      "Service",
+    "allergies":                    "Allergies",
+    "chief_complaint":              "Chief Complaint",
+    "major_surgical_procedures":    "Major Surgical or Invasive Procedure",
+    "history_of_present_illness":   "History of Present Illness",
+    "past_medical_history":         "Past Medical History",
+    "social_history":               "Social History",
+    "family_history":               "Family History",
+    "physical_exam":                "Physical Exam",
+    "pertinent_results":            "Pertinent Results",
+    "medication_on_admission":      "Medications on Admission",
+    "discharge_medications":        "Discharge Medications",
+    "discharge_disposition":        "Discharge Disposition",
+    "facility":                     "Facility",
+    "discharge_diagnosis":          "Discharge Diagnosis",
+    "discharge_condition":          "Discharge Condition",
+    "brief_hospital_course":        "Brief Hospital Course"
+}

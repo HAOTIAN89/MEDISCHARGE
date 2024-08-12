@@ -1,0 +1,8 @@
+{"strat_idx": 1, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "past_medical_history", "social_history", "family_history", "physical_exam", "pertinent_results"]}
+{"strat_idx": 2, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "past_medical_history", "social_history", "family_history", "physical_exam", "pertinent_results"]}
+{"strat_idx": 3, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "past_medical_history", "social_history", "family_history", "physical_exam"]}
+{"strat_idx": 4, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "social_history", "family_history", "physical_exam", "pertinent_results"]}
+{"strat_idx": 5, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "past_medical_history", "social_history", "family_history", "pertinent_results"]}
+{"strat_idx": 6, "strat": ["sex", "service", "allergies", "chief_complaint", "history_of_present_illness", "past_medical_history", "social_history", "family_history", "physical_exam", "pertinent_results"]}
+{"strat_idx": 7, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "past_medical_history", "family_history", "physical_exam", "pertinent_results"]}
+{"strat_idx": 8, "strat": ["sex", "service", "allergies", "chief_complaint", "major_surgical_procedures", "history_of_present_illness", "past_medical_history", "social_history", "physical_exam", "pertinent_results"]}
