@@ -24,15 +24,22 @@ git+https://github.com/facebookresearch/llama.git
 For any other packages that may be required, please see the error messages and install accordingly.
 
 ## Dataset
-Our dataset is 
+Our dataset is from [MIMIC-IV](https://physionet.org/content/mimiciv/3.0/), covering 109,168 Emergency Department (ED) visits. Each patient visit record encompasses several key components: the chief complaints logged by the ED, diagnosis codes (either ICD-9 or ICD-10), at least one radiology report, and a comprehensive discharge summary. 
 
 ## Run MEDISCHARGE System
 In order to run our system to generate the Brief Hospital Course and Discharge Instruction summaries based on a patient’s Electronic Health Record, you should follow these instructions.
 
 ### Inference
-
+In the `src/inference` folder:
+- `BHC_construct.sh`: construct the patient’s Electronic Health Records into prompt for generating Brief Hospital Course.
+- `DI_construct.sh`: construct the patient’s Electronic Health Records into prompt for generating Discharge Instruction.
+- `submit.sh`: run the BHC or DI inference based on the generated prompts.
+- `submit_all.sh`: combine the generated BHC and DI as one csv file and reorder the index to satisfy the submission requirement(optional)
+  
 ### Evaluation
-
+In the `src/inference` folder:
+- `run_experiment.sh`: evaluate the genetation in one time based on six metrics(BLEU, ROUGE, BERTScore, METEOR, AlignScore&MEDCON)
+  
 ## Other Files
 - `webapp/`: a simplified frondend to check the patient’s Electronic Health Records.
 - `context-extension/`: ROPE experiments determine optimal context window expansion.
