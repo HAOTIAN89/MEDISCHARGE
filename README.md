@@ -8,4 +8,27 @@ Our system is build on a Meditron-7B with context window extension, ensuring the
 
 Our system obtains a 0.289 overall score in the leaderboard, an improvement of 183% compared to the baseline, and a ROUGE-1 score of 0.444, achieving a second place performance in the shared task.
 
+## Requirements
+We used [Megatron-LLM codebase](https://github.com/epfLLM/Megatron-LLM) by EPFL LLM Team to distributely train our model so the requirements are the same as it.
+
+```
+transformers >= 4.31.0
+torch >= 2.0.0
+flash-attn >= 2.3.3
+datasets >= 2.14.0
+nltk >= 3.8.0
+sentencepiece >= 0.1.0
+git+https://github.com/facebookresearch/llama.git
+```
+
+For any other packages that may be required, please see the error messages and install accordingly.
+
+## Run MEDISCHARGE System
+In order to run our system to generate the Brief Hospital Course and Discharge Instruction summaries based on a patient’s Electronic Health Record, you should follow these instructions.
+
+#### Inference
+
+#### Evaluation
+
+
 
