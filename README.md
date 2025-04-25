@@ -1,5 +1,5 @@
 ## MEDISCHARGE: An LLM System for Automatically Generating Discharge Summaries of Clinical Electronic Health Record
-This is the official code repository for the ACL BioNLP 2024 workshop paper: MEDISCHARGE: An LLM System for Automatically Generating Discharge Summaries of Clinical Electronic Health Record (the link will be released soon)
+This is the official code repository for the ACL BioNLP 2024 workshop paper: MEDISCHARGE: An LLM System for Automatically Generating Discharge Summaries of Clinical Electronic Health Record [Paper](https://aclanthology.org/2024.bionlp-1.61/)
 
 ## About MEDISCHARGE
 MEDISCHARGE is an LLM-based system to generate Brief Hospital Course and Discharge Instruction summaries based on a patient’s Electronic Health Record. 
